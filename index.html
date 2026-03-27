@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>backlogist — Task Orchestration for AI-Native Teams</title>
+  <meta name="description" content="One CLI replaces seven scripts. AI-powered task lifecycle, code review, knowledge assembly, sprint management, time tracking, and AI meeting host.">
+  <meta property="og:title" content="backlogist — Task Orchestration CLI">
+  <meta property="og:description" content="From raw idea to distributed task plan. AI meetings, time tracking, sprint burndown, natural language queries — all from one CLI.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://docean552-star.github.io/backlogist/">
+  <meta name="theme-color" content="#08070e">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --bg:#08070e;--bg-raised:#0f0e18;--surface:rgba(15,14,24,0.6);
+      --purple:#8b5cf6;--purple-soft:#a78bfa;--pink:#ec4899;--cyan:#06b6d4;
+      --green:#34d399;--yellow:#fbbf24;--red:#f87171;--indigo:#6366f1;
+      --text:#eeeef0;--text-2:#9898ae;--text-3:#55556a;
+      --border:rgba(255,255,255,0.06);--glow:rgba(139,92,246,0.12);
+      --radius:12px;--radius-lg:20px;
+      --ease-out:cubic-bezier(0.23,1,0.32,1);
+      --ease-spring:cubic-bezier(0.34,1.56,0.64,1);
+      --font-display:'Bricolage Grotesque',sans-serif;
+      --font-body:'Outfit',sans-serif;
+      --font-mono:'JetBrains Mono',monospace;
+    }
+    html{scroll-behavior:smooth}
+    body{font-family:var(--font-body);background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden;-webkit-font-smoothing:antialiased;cursor:none}
+    ::selection{background:rgba(139,92,246,0.3)}
+    a,button,.btn,.nav-links a,.footer-links a{cursor:none}
+
+    /* — Custom Cursor — */
+    .cur-dot,.cur-ring{position:fixed;top:0;left:0;pointer-events:none;z-index:99999;border-radius:50%;transform:translate(-50%,-50%)}
+    .cur-dot{width:8px;height:8px;background:var(--purple-soft);transition:width .2s var(--ease-spring),height .2s var(--ease-spring),background .2s}
+    .cur-ring{width:40px;height:40px;border:1.5px solid rgba(168,85,247,0.4);transition:width .35s var(--ease-out),height .35s var(--ease-out),border-color .3s,background .3s}
+    body.cur-hover .cur-dot{width:14px;height:14px;background:var(--pink)}
+    body.cur-hover .cur-ring{width:56px;height:56px;border-color:rgba(236,72,153,0.35);background:rgba(236,72,153,0.05)}
+    body.cur-active .cur-dot{width:6px;height:6px}
+    body.cur-active .cur-ring{width:32px;height:32px}
+    @media(pointer:coarse){.cur-dot,.cur-ring{display:none}body{cursor:default}a,button,.btn{cursor:pointer}}
+
+    /* — Ambient — */
+    .bg-ambient{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 80% 50% at 70% -10%,rgba(139,92,246,0.08) 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 10% 100%,rgba(236,72,153,0.06) 0%,transparent 60%),radial-gradient(ellipse 120% 30% at 50% 110%,rgba(139,92,246,0.1) 0%,transparent 50%)}
+    .grain{position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:0.035;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-repeat:repeat;background-size:200px}
+    .vignette{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse 70% 60% at 50% 50%,transparent 50%,rgba(8,7,14,0.5) 100%)}
+    .grid-bg{position:fixed;left:-10%;right:-10%;bottom:-5%;height:50%;z-index:0;pointer-events:none;background:repeating-linear-gradient(90deg,rgba(139,92,246,0.04) 0px,rgba(139,92,246,0.04) 1px,transparent 1px,transparent 100px),repeating-linear-gradient(0deg,rgba(139,92,246,0.03) 0px,rgba(139,92,246,0.03) 1px,transparent 1px,transparent 100px);transform:perspective(600px) rotateX(65deg);transform-origin:center bottom;mask-image:linear-gradient(to bottom,transparent,rgba(0,0,0,0.4) 40%,rgba(0,0,0,0.6) 100%);-webkit-mask-image:linear-gradient(to bottom,transparent,rgba(0,0,0,0.4) 40%,rgba(0,0,0,0.6) 100%)}
+
+    /* — Typography — */
+    h1,h2,h3{font-family:var(--font-display);font-weight:700;letter-spacing:-0.03em;line-height:1.1}
+    h1{font-size:clamp(3.2rem,7vw,5rem);font-weight:800}
+    h2{font-size:clamp(2rem,4vw,3.2rem)}
+    h3{font-size:1.2rem;font-weight:600}
+    .gradient-text{background:linear-gradient(135deg,#e2d9f3,#a78bfa 40%,#ec4899 80%,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .holo-text{background:linear-gradient(90deg,#a78bfa,#ec4899,#06b6d4,#a78bfa);background-size:300% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:holo 8s linear infinite}
+    @keyframes holo{to{background-position:300% 0}}
+    .label{font-family:var(--font-mono);font-size:0.68rem;font-weight:600;text-transform:uppercase;letter-spacing:0.15em;color:var(--purple-soft)}
+
+    /* — Layout — */
+    .wrap{max-width:1200px;margin:0 auto;padding:0 2rem;position:relative;z-index:2}
+    section{padding:8rem 0}
+
+    /* — Glass Card — */
+    .card{background:var(--surface);backdrop-filter:blur(20px) saturate(150%);-webkit-backdrop-filter:blur(20px) saturate(150%);border:1px solid var(--border);border-radius:var(--radius-lg);transition:border-color 0.4s,box-shadow 0.4s,transform 0.5s var(--ease-out);position:relative;overflow:hidden}
+    .card::before{content:'';position:absolute;inset:0;border-radius:inherit;padding:1px;background:linear-gradient(135deg,transparent,rgba(139,92,246,0.2),transparent,rgba(236,72,153,0.15),transparent);-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:0;transition:opacity 0.4s}
+    .card:hover{transform:translateY(-4px)}
+    .card:hover::before{opacity:1}
+
+    /* — Tilt card — */
+    .tilt-card{transform-style:preserve-3d;perspective:800px}
+
+    /* — Buttons — */
+    .btn{display:inline-flex;align-items:center;gap:0.6rem;padding:0.85rem 2rem;border-radius:10px;font-family:var(--font-body);font-size:0.92rem;font-weight:600;text-decoration:none;border:none;cursor:none;transition:all 0.35s var(--ease-out);position:relative;overflow:hidden}
+    .btn-primary{background:linear-gradient(135deg,var(--purple),#a855f7,var(--pink));color:#fff;box-shadow:0 4px 24px rgba(139,92,246,0.25),0 0 0 1px rgba(139,92,246,0.2)}
+    .btn-primary:hover{box-shadow:0 8px 40px rgba(139,92,246,0.4),0 0 0 1px rgba(139,92,246,0.4);transform:translateY(-2px)}
+    .btn-ghost{background:rgba(255,255,255,0.04);color:var(--text);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.08)}
+    .btn-ghost:hover{background:rgba(139,92,246,0.08);box-shadow:inset 0 0 0 1px rgba(139,92,246,0.25)}
+
+    /* — Badges — */
+    .badge{display:inline-flex;align-items:center;gap:0.4rem;font-family:var(--font-mono);font-size:0.68rem;font-weight:500;padding:0.25rem 0.7rem;border-radius:9999px;border:1px solid}
+    .badge-purple{background:rgba(139,92,246,0.1);color:var(--purple-soft);border-color:rgba(139,92,246,0.2)}
+    .badge-green{background:rgba(52,211,153,0.1);color:var(--green);border-color:rgba(52,211,153,0.2)}
+    .badge-pink{background:rgba(236,72,153,0.1);color:#f472b6;border-color:rgba(236,72,153,0.2)}
+    .badge-cyan{background:rgba(6,182,212,0.1);color:var(--cyan);border-color:rgba(6,182,212,0.2)}
+    .badge-yellow{background:rgba(251,191,36,0.1);color:var(--yellow);border-color:rgba(251,191,36,0.2)}
+
+    /* — Nav — */
+    .nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:1rem 0;background:rgba(8,7,14,0.6);backdrop-filter:blur(20px) saturate(150%);-webkit-backdrop-filter:blur(20px) saturate(150%);border-bottom:1px solid transparent;transition:border-color 0.3s,padding 0.3s}
+    .nav.scrolled{border-bottom-color:var(--border);padding:0.6rem 0}
+    .nav-inner{max-width:1200px;margin:0 auto;padding:0 2rem;display:flex;align-items:center;justify-content:space-between}
+    .nav-logo{font-family:var(--font-display);font-weight:800;font-size:1.15rem;text-decoration:none;color:var(--text)}
+    .nav-links{display:flex;align-items:center;gap:2rem}
+    .nav-links a{font-size:0.85rem;color:var(--text-2);text-decoration:none;transition:color 0.2s}
+    .nav-links a:hover{color:var(--text)}
+    .nav-cta{font-family:var(--font-mono);font-size:0.75rem;font-weight:500;padding:0.45rem 1rem;border-radius:8px;background:rgba(139,92,246,0.1);color:var(--purple-soft)!important;border:1px solid rgba(139,92,246,0.2);transition:all 0.3s!important}
+    .nav-cta:hover{background:rgba(139,92,246,0.18)!important;color:#fff!important}
+
+    /* — Hero — */
+    .hero{min-height:100vh;display:flex;align-items:center;padding-top:6rem;padding-bottom:4rem}
+    .hero-grid{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center}
+    .hero-overline{display:inline-flex;align-items:center;gap:0.6rem;margin-bottom:1.5rem}
+    .hero-overline .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse-dot 2s ease-in-out infinite}
+    @keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:0.4}}
+    .hero h1 .line{display:block;opacity:0;transform:translateY(30px);animation:reveal 0.8s var(--ease-out) forwards}
+    .hero h1 .line:nth-child(2){animation-delay:.15s}
+    .hero h1 .line:nth-child(3){animation-delay:.3s}
+    .hero h1 .strike{text-decoration:line-through;text-decoration-color:var(--red);text-decoration-thickness:3px;color:var(--text-3)}
+    .hero-sub{margin-top:1.5rem;font-size:1.1rem;color:var(--text-2);max-width:440px;line-height:1.7;opacity:0;animation:reveal 0.8s var(--ease-out) .45s forwards}
+    .hero-actions{display:flex;gap:0.75rem;margin-top:2rem;flex-wrap:wrap;opacity:0;animation:reveal 0.8s var(--ease-out) .6s forwards}
+    .hero-terminal-wrap{opacity:0;transform:translateY(20px) rotateY(-2deg);animation:reveal-terminal 1s var(--ease-out) .5s forwards}
+    @keyframes reveal{to{opacity:1;transform:translateY(0)}}
+    @keyframes reveal-terminal{to{opacity:1;transform:translateY(0) rotateY(0)}}
+
+    /* — Terminal — */
+    .terminal{background:rgba(10,9,16,0.9);backdrop-filter:blur(24px);border:1px solid rgba(139,92,246,0.15);border-radius:var(--radius-lg);overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.6),0 0 60px rgba(139,92,246,0.06),inset 0 1px 0 rgba(255,255,255,0.04)}
+    .term-bar{display:flex;align-items:center;gap:6px;padding:14px 16px;background:rgba(255,255,255,0.02);border-bottom:1px solid var(--border)}
+    .term-dot{width:10px;height:10px;border-radius:50%}
+    .term-dot.r{background:#ef4444}.term-dot.y{background:#fbbf24}.term-dot.g{background:#22c55e}
+    .term-title{flex:1;text-align:center;font-family:var(--font-mono);font-size:0.68rem;color:var(--text-3)}
+    .term-body{padding:1.25rem 1.5rem;font-family:var(--font-mono);font-size:0.8rem;line-height:1.85;color:var(--text-2);min-height:220px}
+    .term-body .p{color:var(--purple-soft)}.term-body .c{color:var(--text)}.term-body .f{color:var(--cyan)}.term-body .s{color:var(--green)}.term-body .o{color:var(--text-2)}.term-body .ok{color:var(--green);font-weight:600}.term-body .w{color:var(--yellow)}.term-body .d{color:var(--text-3)}
+    .term-cursor{display:inline-block;width:8px;height:16px;vertical-align:middle;background:var(--purple-soft);animation:blink 1s step-end infinite}
+    @keyframes blink{50%{opacity:0}}
+
+    /* — Marquee — */
+    .marquee-section{padding:0;overflow:hidden;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+    .marquee-track{display:flex;width:max-content;animation:marquee 40s linear infinite}
+    .marquee-track:hover{animation-play-state:paused}
+    .marquee-item{display:flex;align-items:center;gap:2rem;padding:1.2rem 2rem;font-family:var(--font-display);font-size:0.95rem;font-weight:600;color:var(--text-3);white-space:nowrap;text-transform:uppercase;letter-spacing:0.05em}
+    .marquee-item .sep{width:6px;height:6px;border-radius:50%;background:var(--purple);opacity:0.4}
+    @keyframes marquee{to{transform:translateX(-50%)}}
+
+    /* — Section headers — */
+    .sec-head{margin-bottom:4rem}.sec-head.center{text-align:center}
+    .sec-head .label{display:block;margin-bottom:0.75rem}
+    .sec-head h2{margin-bottom:1rem}
+    .sec-head p{color:var(--text-2);font-size:1.05rem;max-width:520px;line-height:1.7}
+    .sec-head.center p{margin:0 auto}
+
+    /* — Compare — */
+    .compare{display:grid;grid-template-columns:1fr 1fr;gap:2rem}
+    .compare-col{padding:2.5rem}
+    .compare-col h3{display:flex;align-items:center;gap:0.5rem;margin-bottom:1.5rem}
+    .compare-list{list-style:none;display:flex;flex-direction:column;gap:0.9rem}
+    .compare-list li{display:flex;align-items:center;gap:0.75rem;font-family:var(--font-mono);font-size:0.82rem;color:var(--text-2)}
+    .compare-list .icon{width:22px;height:22px;min-width:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700}
+    .compare-before .icon{background:rgba(248,113,113,0.1);color:var(--red)}
+    .compare-after .icon{background:rgba(52,211,153,0.1);color:var(--green)}
+
+    /* — Stats — */
+    .stats{display:grid;grid-template-columns:repeat(6,1fr);gap:1rem}
+    .stat{text-align:center;padding:2rem 1rem;border-radius:var(--radius);background:rgba(255,255,255,0.02);border:1px solid var(--border);transition:border-color 0.3s,transform 0.3s var(--ease-out)}
+    .stat:hover{border-color:rgba(139,92,246,0.2);transform:translateY(-2px)}
+    .stat-val{font-family:var(--font-display);font-size:2.2rem;font-weight:800;line-height:1;margin-bottom:0.4rem}
+    .stat-label{font-size:0.78rem;color:var(--text-3)}
+
+    /* — Bento — */
+    .bento{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:auto;gap:1rem}
+    .bento-item{padding:2rem}.bento-item.span-2{grid-column:span 2}
+    .bento-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin-bottom:1.2rem;background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.15)}
+    .bento-item h3{margin-bottom:0.6rem}.bento-item p{color:var(--text-2);font-size:0.9rem;line-height:1.7}
+
+    /* — Use Cases — */
+    .usecases{display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem}
+    .uc-card{padding:2rem;position:relative;overflow:hidden;transition:border-color 0.4s,box-shadow 0.4s,transform 0.5s var(--ease-out)}
+    .uc-card .uc-number{position:absolute;top:1.5rem;right:1.5rem;font-family:var(--font-display);font-size:3.5rem;font-weight:800;line-height:1;opacity:0.04}
+    .uc-badge{margin-bottom:1rem}
+    .uc-card h3{margin-bottom:0.6rem;font-size:1.1rem}
+    .uc-card p{color:var(--text-2);font-size:0.88rem;line-height:1.7}
+    .uc-card .uc-cli{margin-top:1rem;font-family:var(--font-mono);font-size:0.75rem;padding:0.6rem 0.9rem;border-radius:8px;background:rgba(0,0,0,0.3);color:var(--text-3);border:1px solid var(--border)}
+    .uc-card .uc-cli span{color:var(--purple-soft)}
+    .uc-card.featured{grid-column:span 2;background:linear-gradient(135deg,rgba(139,92,246,0.06),rgba(236,72,153,0.04));border-color:rgba(139,92,246,0.15)}
+    .uc-card.featured h3{font-size:1.3rem}
+
+    /* — Pipeline — */
+    .pipeline{display:grid;grid-template-columns:repeat(6,1fr);gap:0;position:relative}
+    .pipeline::before{content:'';position:absolute;top:32px;left:8%;right:8%;height:2px;background:linear-gradient(90deg,var(--purple),var(--pink),var(--cyan));opacity:0.3}
+    .pipe-step{display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 0.5rem;position:relative}
+    .pipe-node{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:700;font-size:0.85rem;background:var(--bg);border:2px solid rgba(139,92,246,0.3);color:var(--purple-soft);transition:all 0.4s var(--ease-out);z-index:1;margin-bottom:1rem}
+    .pipe-step:hover .pipe-node{background:var(--purple);color:#fff;box-shadow:0 0 30px rgba(139,92,246,0.35);border-color:var(--purple);transform:scale(1.1)}
+    .pipe-step h4{font-family:var(--font-display);font-size:0.9rem;font-weight:600;margin-bottom:0.35rem}
+    .pipe-step p{font-size:0.75rem;color:var(--text-3);line-height:1.5;max-width:140px}
+
+    /* — Reviewer Modules — */
+    .modules-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-top:2.5rem}
+    .mod-card{padding:1.5rem;text-align:center;border-radius:var(--radius);background:rgba(255,255,255,0.02);border:1px solid var(--border);transition:all 0.35s var(--ease-out)}
+    .mod-card:hover{border-color:rgba(139,92,246,0.25);background:rgba(139,92,246,0.04);transform:translateY(-2px)}
+    .mod-card.active{border-color:rgba(52,211,153,0.3)}
+    .mod-name{font-family:var(--font-mono);font-size:0.8rem;font-weight:600;margin-bottom:0.4rem}
+    .mod-card.active .mod-name{color:var(--green)}
+    .mod-trigger{font-family:var(--font-mono);font-size:0.65rem;color:var(--text-3);margin-bottom:0.6rem}
+    .mod-desc{font-size:0.78rem;color:var(--text-2);line-height:1.5}
+
+    /* — Footer — */
+    footer{border-top:1px solid var(--border);padding:3rem 0;text-align:center;position:relative;z-index:2}
+    .footer-logo{font-family:var(--font-display);font-weight:800;font-size:1.2rem;margin-bottom:0.4rem}
+    footer p{color:var(--text-3);font-size:0.8rem}
+    .footer-links{display:flex;justify-content:center;gap:2rem;margin-top:0.75rem}
+    .footer-links a{color:var(--text-2);text-decoration:none;font-size:0.8rem;transition:color 0.2s}
+    .footer-links a:hover{color:var(--purple-soft)}
+
+    /* — Scroll reveal — */
+    .sr{opacity:0;transform:translateY(32px);transition:opacity 0.7s var(--ease-out),transform 0.7s var(--ease-out)}
+    .sr.vis{opacity:1;transform:translateY(0)}
+    .sr[data-d="1"]{transition-delay:.1s}.sr[data-d="2"]{transition-delay:.2s}.sr[data-d="3"]{transition-delay:.3s}.sr[data-d="4"]{transition-delay:.4s}.sr[data-d="5"]{transition-delay:.5s}
+
+    /* — Scrollbar — */
+    ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:rgba(139,92,246,0.3);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:rgba(139,92,246,0.5)}
+
+    /* — Responsive — */
+    @media(max-width:1024px){
+      .hero-grid{grid-template-columns:1fr;gap:3rem;text-align:center}
+      .hero-sub{margin:1.5rem auto 0}.hero-actions{justify-content:center}
+      .hero-overline{justify-content:center}.hero-badges{justify-content:center!important}
+      .stats{grid-template-columns:repeat(3,1fr)}
+      .pipeline{grid-template-columns:repeat(3,1fr);gap:2rem 0}.pipeline::before{display:none}
+      .modules-grid{grid-template-columns:repeat(3,1fr)}
+      .usecases{grid-template-columns:1fr 1fr}.uc-card.featured{grid-column:span 2}
+    }
+    @media(max-width:768px){
+      section{padding:5rem 0}.compare{grid-template-columns:1fr}
+      .bento{grid-template-columns:1fr}.bento-item.span-2{grid-column:span 1}
+      .stats{grid-template-columns:repeat(2,1fr)}.pipeline{grid-template-columns:repeat(2,1fr)}
+      .modules-grid{grid-template-columns:1fr 1fr}
+      .usecases{grid-template-columns:1fr}.uc-card.featured{grid-column:span 1}
+      .nav-links a:not(.nav-cta){display:none}
+    }
+    @media(max-width:480px){.stats{grid-template-columns:1fr 1fr}.modules-grid{grid-template-columns:1fr}.pipeline{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+
+<div class="cur-dot" id="curDot"></div>
+<div class="cur-ring" id="curRing"></div>
+<div class="bg-ambient"></div>
+<div class="grid-bg"></div>
+<div class="vignette"></div>
+<div class="grain"></div>
+
+<!-- NAV -->
+<nav class="nav" id="nav">
+  <div class="nav-inner">
+    <div class="nav-logo" style="display:flex;align-items:center;gap:8px">
+      <a href="https://ayant-x.com" style="display:flex;align-items:center"><img src="ax-logo.png" alt="AX" style="height:26px;filter:brightness(1.2)"></a>
+      <span style="color:var(--text-3);font-weight:300;font-size:0.8em">/</span>
+      <a href="#" style="display:flex;align-items:center;gap:6px;text-decoration:none;color:var(--text)">
+        <img src="backlogist-logo.jpeg" alt="" style="height:24px;border-radius:6px">
+        <span style="font-weight:600;font-size:0.95rem">backlogist</span>
+      </a>
+    </div>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#usecases">Use Cases</a>
+      <a href="#pipeline">Pipeline</a>
+      <a href="#waitlist" class="nav-cta">Join Waitlist &rarr;</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div>
+        <div class="hero-overline" style="gap:10px">
+          <div class="dot"></div>
+          <span class="label">by</span>
+          <a href="https://ayant-x.com" style="display:flex;align-items:center"><img src="ax-logo.png" alt="AX" style="height:36px;filter:brightness(1.2)"></a>
+        </div>
+        <div style="opacity:0;animation:reveal 0.7s var(--ease-out) .05s forwards;margin-bottom:1.25rem">
+          <img src="backlogist-logo.jpeg" alt="backlogist" style="height:80px;border-radius:18px;filter:drop-shadow(0 0 24px rgba(139,92,246,0.35)) drop-shadow(0 0 50px rgba(236,72,153,0.12))">
+        </div>
+        <h1>
+          <span class="line"><span class="gradient-text">backlogist</span></span>
+          <span class="line" style="font-size:0.55em;font-weight:400;font-family:var(--font-body);color:var(--text-2);letter-spacing:0;line-height:1.5;margin-top:0.3rem">AI-native task orchestration<br>for multi-agent teams</span>
+        </h1>
+        <p class="hero-sub">The CLI that runs your sprints, tracks your time, reviews your code, hosts your standups, and turns raw ideas into distributed task plans. Works with Claude Code, any MCP-compatible assistant, or standalone.</p>
+        <div class="hero-badges" style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:1.25rem;opacity:0;animation:reveal 0.8s var(--ease-out) .5s forwards">
+          <span class="badge badge-green">100% Private & Offline</span>
+          <span class="badge badge-purple">AI-Ready</span>
+          <span class="badge badge-cyan">Cross-platform</span>
+          <span class="badge badge-yellow">Telegram Bot</span>
+        </div>
+        <div class="hero-actions">
+          <a href="#waitlist" class="btn btn-primary magnetic">Join Waitlist</a>
+          <a href="#usecases" class="btn btn-ghost magnetic">See Use Cases</a>
+        </div>
+      </div>
+      <div class="hero-terminal-wrap">
+        <div class="terminal tilt-card" id="heroTerm">
+          <div class="term-bar"><div class="term-dot r"></div><div class="term-dot y"></div><div class="term-dot g"></div><span class="term-title">backlogist</span></div>
+          <div class="term-body" id="typewriter"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<section class="marquee-section" style="padding:0">
+  <div class="marquee-track">
+    <div class="marquee-item"><a href="https://ayant-x.com"><img src="ax-logo.png" alt="AX" style="height:24px;filter:brightness(1.2)"></a> <span class="sep" style="background:var(--pink);opacity:0.7"></span></div><div class="marquee-item">Create <span class="sep"></span></div><div class="marquee-item">Sprint <span class="sep"></span></div><div class="marquee-item">Time Track <span class="sep"></span></div><div class="marquee-item">AI Meeting <span class="sep"></span></div><div class="marquee-item">Review <span class="sep"></span></div><div class="marquee-item">Knowledge <span class="sep"></span></div><div class="marquee-item">Gantt <span class="sep"></span></div><div class="marquee-item">Private <span class="sep"></span></div><div class="marquee-item">Cross-platform <span class="sep"></span></div>
+    <div class="marquee-item"><a href="https://ayant-x.com"><img src="ax-logo.png" alt="AX" style="height:24px;filter:brightness(1.2)"></a> <span class="sep" style="background:var(--pink);opacity:0.7"></span></div><div class="marquee-item">Create <span class="sep"></span></div><div class="marquee-item">Sprint <span class="sep"></span></div><div class="marquee-item">Time Track <span class="sep"></span></div><div class="marquee-item">AI Meeting <span class="sep"></span></div><div class="marquee-item">Review <span class="sep"></span></div><div class="marquee-item">Knowledge <span class="sep"></span></div><div class="marquee-item">Gantt <span class="sep"></span></div><div class="marquee-item">Private <span class="sep"></span></div><div class="marquee-item">Cross-platform <span class="sep"></span></div>
+  </div>
+</section>
+
+<!-- BEFORE / AFTER -->
+<section>
+  <div class="wrap">
+    <div class="sec-head center sr"><span class="label"><a href="https://ayant-x.com" style="display:inline;vertical-align:middle"><img src="ax-logo.png" alt="AX" style="height:28px;filter:brightness(1.2);vertical-align:middle;margin-right:6px"></a> Problem</span><h2>Before backlogist,<br><span class="gradient-text">chaos was the norm</span></h2></div>
+    <div class="compare sr" data-d="1">
+      <div class="compare-col compare-before card tilt-card">
+        <h3><span style="color:var(--red)">&#10005;</span> Without backlogist</h3>
+        <ul class="compare-list">
+          <li><span class="icon">&#10005;</span> 7 scripts, each parsing YAML independently</li>
+          <li><span class="icon">&#10005;</span> Agents skip research and preparation</li>
+          <li><span class="icon">&#10005;</span> No structured review — rubber stamp closures</li>
+          <li><span class="icon">&#10005;</span> Context lost between sessions</li>
+          <li><span class="icon">&#10005;</span> Sprint planning by gut feel</li>
+          <li><span class="icon">&#10005;</span> No audit trail — who changed what?</li>
+        </ul>
+      </div>
+      <div class="compare-col compare-after card tilt-card">
+        <h3><span style="color:var(--green)">&#10003;</span> With backlogist</h3>
+        <ul class="compare-list">
+          <li><span class="icon">&#10003;</span> Single CLI, unified SQLite + YAML storage</li>
+          <li><span class="icon">&#10003;</span> Knowledge assembler: 14 sources, automatic</li>
+          <li><span class="icon">&#10003;</span> AI reviewer with PASS / FAIL / NEEDS_WORK</li>
+          <li><span class="icon">&#10003;</span> Context injected every tool call via hooks</li>
+          <li><span class="icon">&#10003;</span> Real time tracking + sprint burndown</li>
+          <li><span class="icon">&#10003;</span> Immutable audit trail, every field change</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section style="padding-top:0">
+  <div class="wrap">
+    <div class="stats sr">
+      <div class="stat"><div class="stat-val gradient-text">7&rarr;1</div><div class="stat-label">Scripts consolidated</div></div>
+      <div class="stat"><div class="stat-val gradient-text" data-count="14">0</div><div class="stat-label">Knowledge sources</div></div>
+      <div class="stat"><div class="stat-val gradient-text" data-count="5">0</div><div class="stat-label">Reviewer modules</div></div>
+      <div class="stat"><div class="stat-val gradient-text">&lt;30<span style="font-size:0.45em">ms</span></div><div class="stat-label">Hot-path hooks</div></div>
+      <div class="stat"><div class="stat-val gradient-text" data-count="38">0</div><div class="stat-label">Tests passing</div></div>
+      <div class="stat"><div class="stat-val gradient-text" data-count="11">0</div><div class="stat-label">Database tables</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- USE CASES -->
+<section id="usecases">
+  <div class="wrap">
+    <div class="sec-head center sr">
+      <span class="label"><a href="https://ayant-x.com" style="display:inline;vertical-align:middle"><img src="ax-logo.png" alt="AX" style="height:28px;filter:brightness(1.2);vertical-align:middle;margin-right:6px"></a> Use Cases</span>
+      <h2>Not just a task tracker.<br><span class="gradient-text">A command center.</span></h2>
+      <p>From raw ideas to shipped features. Every agile ceremony, automated.</p>
+    </div>
+
+    <div class="usecases">
+      <div class="uc-card featured card tilt-card sr">
+        <div class="uc-number">01</div>
+        <span class="badge badge-pink uc-badge">Killer Feature</span>
+        <h3>AI Meeting Host</h3>
+        <p>backlogist doesn't record meetings — it <strong style="color:var(--text)">runs them</strong>. Opens the call, reads today's agenda from backlog, asks each participant about their tasks, logs answers in real-time, escalates blockers, closes with summary and auto-created action items. Daily standups: 3 questions per person, blockers escalated instantly.</p>
+        <div class="uc-cli"><span>$</span> backlogist meeting --standup --channel general</div>
+      </div>
+
+      <div class="uc-card card tilt-card sr" data-d="1">
+        <div class="uc-number">02</div>
+        <span class="badge badge-purple uc-badge">Core</span>
+        <h3>Idea &rarr; Task Plan</h3>
+        <p>Throw in a raw idea. backlogist searches 14 sources for context, breaks it into subtasks, assigns to agents by affinity, sets blockers and dependencies. One command — distributed plan for the whole team.</p>
+        <div class="uc-cli"><span>$</span> backlogist create title:"Need a blog" --template feature</div>
+      </div>
+
+      <div class="uc-card card tilt-card sr" data-d="1">
+        <div class="uc-number">03</div>
+        <span class="badge badge-green uc-badge">Built-in</span>
+        <h3>Time Tracking</h3>
+        <p>Timer starts on <code style="color:var(--cyan)">take</code>, stops on <code style="color:var(--cyan)">release</code> or <code style="color:var(--cyan)">close</code>. Know exactly how long each task takes. Use real data to plan sprints instead of guessing.</p>
+        <div class="uc-cli"><span>$</span> backlogist #352 take <span style="color:var(--green)">// timer starts</span></div>
+      </div>
+
+      <div class="uc-card card tilt-card sr">
+        <div class="uc-number">04</div>
+        <span class="badge badge-cyan uc-badge">Agile</span>
+        <h3>Sprint Management</h3>
+        <p>Create sprints with scope and deadlines. Track progress with real burndown charts — not spreadsheet theater. Auto-archive done tasks older than 30 days.</p>
+        <div class="uc-cli"><span>$</span> backlogist sprint create --deadline 2026-04-01 --scope 280,317</div>
+      </div>
+
+      <div class="uc-card card tilt-card sr" data-d="1">
+        <div class="uc-number">05</div>
+        <span class="badge badge-yellow uc-badge">Intelligence</span>
+        <h3>Ask in Plain Language</h3>
+        <p>No filters needed. Ask questions like a human: "What blocks SEO?", "Who's overloaded?", "What shipped this week?" Claude answers from live backlog state.</p>
+        <div class="uc-cli"><span>$</span> backlogist ask "what blocks the SEO pipeline?"</div>
+      </div>
+
+      <div class="uc-card card tilt-card sr" data-d="2">
+        <div class="uc-number">06</div>
+        <span class="badge badge-purple uc-badge">Visualization</span>
+        <h3>Gantt &amp; Dependency Graphs</h3>
+        <p>See the critical path instantly. Mermaid dependency graphs, Gantt charts with owner swimlanes. Free alternative to what every task tracker charges for.</p>
+        <div class="uc-cli"><span>$</span> backlogist graph <span style="color:var(--text-3)">// mermaid blocked_by visualization</span></div>
+      </div>
+
+      <div class="uc-card featured card tilt-card sr">
+        <div class="uc-number">07</div>
+        <span class="badge badge-cyan uc-badge">Integrations</span>
+        <h3>Meeting Transcripts &rarr; Tasks</h3>
+        <p>Fireflies.ai transcribes your client call. backlogist extracts action items and creates tasks automatically. Discussed "need a blog"? Task created, assigned, knowledge assembled. Telegram bot sends daily digests, human gates via inline buttons, real-time status updates. Notion two-way sync keeps the whole team on the same page.</p>
+        <div class="uc-cli"><span>$</span> backlogist sync --notion --telegram-digest</div>
+      </div>
+
+      <div class="uc-card card tilt-card sr" data-d="1">
+        <div class="uc-number">08</div>
+        <span class="badge badge-green uc-badge">Automation</span>
+        <h3>Recurring Tasks</h3>
+        <p>Weekly review? Monthly client report? Set it once — backlogist creates tasks on schedule. Or on-close: "Sprint 5" done &rarr; "Sprint 6" auto-created with inherited fields.</p>
+        <div class="uc-cli"><span>$</span> backlogist create --recurrence weekly --template review</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="wrap">
+    <div class="sec-head center sr"><span class="label"><a href="https://ayant-x.com" style="display:inline;vertical-align:middle"><img src="ax-logo.png" alt="AX" style="height:28px;filter:brightness(1.2);vertical-align:middle;margin-right:6px"></a> Core Engine</span><h2>Everything under the hood.<br><span class="gradient-text">Nothing unnecessary.</span></h2><p>Nine commands, six hooks, one AI reviewer. Each piece eliminates a specific failure mode.</p></div>
+    <div class="bento">
+      <div class="bento-item span-2 card tilt-card sr"><div class="bento-icon">&#9881;</div><h3>Lifecycle Management</h3><p>Create, take, release, update, close — with enforced state transitions. <span style="font-family:var(--font-mono);font-size:0.82em;color:var(--purple-soft)">BACKLOG &rarr; READY &rarr; IN_PROGRESS &rarr; IN_REVIEW &rarr; DONE</span>. Invalid transitions rejected with clear guidance.</p></div>
+      <div class="bento-item card tilt-card sr" data-d="1"><div class="bento-icon" style="background:rgba(236,72,153,0.08);border-color:rgba(236,72,153,0.15)">&#128270;</div><h3>Knowledge Assembly</h3><p>14 sources searched in parallel. Specs, legacy code, case studies, HANDOFF archives. Claude filters for relevance. Over-inclusive by design.</p></div>
+      <div class="bento-item card tilt-card sr"><div class="bento-icon" style="background:rgba(52,211,153,0.08);border-color:rgba(52,211,153,0.15)">&#9989;</div><h3>Modular AI Review</h3><p>Prompt modules activate per task type. Code &rarr; spec validation. Integration &rarr; data flow checks. Structured JSON verdicts: PASS, FAIL, NEEDS_WORK.</p></div>
+      <div class="bento-item card tilt-card sr" data-d="1"><div class="bento-icon" style="background:rgba(6,182,212,0.08);border-color:rgba(6,182,212,0.15)">&#9889;</div><h3>Three-Tier Performance</h3><p>Hot-path &lt;30ms (zero imports). Standard &lt;3s. Heavy up to 120s with progress indicators.</p></div>
+      <div class="bento-item card tilt-card sr" data-d="2"><div class="bento-icon" style="background:rgba(251,191,36,0.08);border-color:rgba(251,191,36,0.15)">&#128209;</div><h3>Immutable Audit Trail</h3><p>Every field change: who, when, what, why. Append-only. Queryable via <code style="color:var(--purple-soft)">history</code>.</p></div>
+      <div class="bento-item card tilt-card sr" data-d="1"><div class="bento-icon">&#128268;</div><h3>Hook Enforcement</h3><p>Six hooks in Claude Code's tool lifecycle. Plans injected every call. Reviews invalidated on edits. Closures gated on verdicts.</p></div>
+      <div class="bento-item span-2 card tilt-card sr" data-d="2"><div class="bento-icon" style="background:rgba(6,182,212,0.08);border-color:rgba(6,182,212,0.15)">&#127919;</div><h3>Taskwarrior-Style Filters</h3><p>Natural syntax: <span style="font-family:var(--font-mono);font-size:0.82em;color:var(--cyan)">#280</span> for ID, <span style="font-family:var(--font-mono);font-size:0.82em;color:var(--cyan)">owner:A</span> for field match, <span style="font-family:var(--font-mono);font-size:0.82em;color:var(--cyan)">status:~DONE</span> for negation, <span style="font-family:var(--font-mono);font-size:0.82em;color:var(--green)">+urgent</span> for tags. Reads like English.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- PIPELINE -->
+<section id="pipeline">
+  <div class="wrap">
+    <div class="sec-head center sr"><span class="label"><a href="https://ayant-x.com" style="display:inline;vertical-align:middle"><img src="ax-logo.png" alt="AX" style="height:28px;filter:brightness(1.2);vertical-align:middle;margin-right:6px"></a> Lifecycle</span><h2>From creation to closure,<br><span class="gradient-text">every step is gated</span></h2></div>
+    <div class="pipeline sr">
+      <div class="pipe-step"><div class="pipe-node">1</div><h4>Create</h4><p>Templates, dedup, knowledge assembly</p><span class="badge badge-purple" style="margin-top:0.5rem">~30s</span></div>
+      <div class="pipe-step"><div class="pipe-node">2</div><h4>Prepare</h4><p>task_plan, key questions, test spec</p><span class="badge badge-cyan" style="margin-top:0.5rem">gate</span></div>
+      <div class="pipe-step"><div class="pipe-node">3</div><h4>Implement</h4><p>Plan injected per tool call</p><span class="badge badge-green" style="margin-top:0.5rem">&lt;30ms</span></div>
+      <div class="pipe-step"><div class="pipe-node">4</div><h4>Commit</h4><p>Tests exist, assertions verified</p><span class="badge badge-yellow" style="margin-top:0.5rem">fail-open</span></div>
+      <div class="pipe-step"><div class="pipe-node">5</div><h4>Review</h4><p>AI reviewer, modular prompts</p><span class="badge badge-pink" style="margin-top:0.5rem">~120s</span></div>
+      <div class="pipe-step"><div class="pipe-node">6</div><h4>Close</h4><p>Approval, unblock, rescore</p><span class="badge badge-green" style="margin-top:0.5rem">fail-closed</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- REVIEWER -->
+<section id="reviewer">
+  <div class="wrap">
+    <div class="sec-head center sr"><span class="label"><a href="https://ayant-x.com" style="display:inline;vertical-align:middle"><img src="ax-logo.png" alt="AX" style="height:28px;filter:brightness(1.2);vertical-align:middle;margin-right:6px"></a> AI Reviewer</span><h2>Five modules,<br><span class="gradient-text">one intelligent verdict</span></h2><p>Prompt modules activate conditionally. Each task gets exactly the review it needs.</p></div>
+    <div class="modules-grid sr">
+      <div class="mod-card active"><div class="mod-name">base.txt</div><div class="mod-trigger">Always active</div><div class="mod-desc">done_when, DOD, why alignment</div></div>
+      <div class="mod-card"><div class="mod-name">module-code</div><div class="mod-trigger">mode == "Code"</div><div class="mod-desc">Code vs spec, tests, contracts</div></div>
+      <div class="mod-card"><div class="mod-name">module-think</div><div class="mod-trigger">mode == "Think"</div><div class="mod-desc">Completeness, consumer gaps</div></div>
+      <div class="mod-card"><div class="mod-name">module-integration</div><div class="mod-trigger">bool(consumers)</div><div class="mod-desc">Data flow, format match</div></div>
+      <div class="mod-card"><div class="mod-name">module-regression</div><div class="mod-trigger">has previous_review</div><div class="mod-desc">Prior issues resolved</div></div>
+    </div>
+    <div class="sr" data-d="2" style="max-width:680px;margin:3rem auto 0">
+      <div class="terminal tilt-card"><div class="term-bar"><div class="term-dot r"></div><div class="term-dot y"></div><div class="term-dot g"></div><span class="term-title">review-result.json</span></div>
+        <div class="term-body" style="min-height:auto"><span style="color:var(--text-3)">{</span>
+  <span class="s">"verdict"</span>: <span class="ok">"PASS"</span>,
+  <span class="s">"done_when_check"</span>: [
+    { <span class="s">"criterion"</span>: <span class="s">"Auth middleware validates JWT"</span>,
+      <span class="s">"met"</span>: <span class="ok">true</span>,
+      <span class="s">"evidence"</span>: <span class="s">"middleware.go:42"</span> }
+  ],
+  <span class="s">"coverage_score"</span>: <span class="ok">92</span>,
+  <span class="s">"issues"</span>: [],
+  <span class="s">"summary"</span>: <span class="s">"All criteria met. Clean implementation."</span>
+<span style="color:var(--text-3)">}</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section style="padding:8rem 0">
+  <div class="wrap" style="text-align:center">
+    <div class="sr">
+      <div style="display:flex;align-items:center;justify-content:center;gap:1.5rem;margin-bottom:1.5rem">
+        <img src="backlogist-logo.jpeg" alt="backlogist" style="height:64px;border-radius:16px;filter:drop-shadow(0 0 24px rgba(139,92,246,0.35))">
+        <span style="color:var(--text-3);font-size:2rem;font-weight:200">&times;</span>
+        <a href="https://ayant-x.com"><img src="ax-logo.png" alt="AX" style="height:56px;filter:brightness(1.2) drop-shadow(0 0 24px rgba(139,92,246,0.35))"></a>
+      </div>
+      <h2 style="font-size:clamp(2.2rem,5vw,3.5rem)">Stop losing tasks.<br><span class="gradient-text">Start orchestrating.</span></h2>
+      <p style="color:var(--text-2);font-size:1.05rem;max-width:500px;margin:1.25rem auto 1rem;line-height:1.7">AI-native task orchestration. Runs your sprints, tracks your time, reviews your code, hosts your meetings. 100% private.</p>
+      <div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;margin-bottom:2rem">
+        <span class="badge badge-green">100% Private</span>
+        <span class="badge badge-purple">AI-Ready</span>
+        <span class="badge badge-cyan">Cross-platform</span>
+        <span class="badge badge-yellow">Telegram Bot</span>
+      </div>
+      <form id="waitlist" action="https://formspree.io/f/mkopgngo" method="POST" style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;max-width:480px;margin:0 auto;">
+        <input type="email" name="email" required placeholder="your@email.com" style="flex:1;min-width:220px;padding:0.85rem 1.2rem;border-radius:12px;border:1px solid rgba(139,92,246,0.3);background:rgba(14,11,30,0.7);color:#fff;font-size:1rem;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--purple)'" onblur="this.style.borderColor='rgba(139,92,246,0.3)'">
+        <input type="hidden" name="_subject" value="backlogist waitlist signup">
+        <button type="submit" class="btn btn-primary magnetic">Join Waitlist</button>
+      </form>
+      <p style="color:var(--text-dim);font-size:0.8rem;margin-top:1rem;opacity:0.6;">No spam. We'll notify you when early access opens.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div style="display:flex;align-items:center;justify-content:center;gap:1rem;margin-bottom:1rem">
+      <img src="backlogist-logo.jpeg" alt="backlogist" style="height:44px;border-radius:12px;filter:drop-shadow(0 0 16px rgba(139,92,246,0.3))">
+      <a href="https://ayant-x.com"><img src="ax-logo.png" alt="AX" style="height:40px;filter:brightness(1.2) drop-shadow(0 0 16px rgba(139,92,246,0.3))"></a>
+    </div>
+    <div class="footer-logo">backlogist</div>
+    <p>AI-native task orchestration by <a href="https://ayant-x.com" style="color:var(--text);text-decoration:none;font-weight:600">Ayant-X</a></p>
+    <div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;margin:1rem 0">
+      <span class="badge badge-green" style="font-size:0.6rem">Private & Offline</span>
+      <span class="badge badge-purple" style="font-size:0.6rem">AI-Ready</span>
+      <span class="badge badge-cyan" style="font-size:0.6rem">Cross-platform</span>
+    </div>
+    <div class="footer-links"><a href="https://ayant-x.com">ayant-x.com</a><a href="#features">Features</a><a href="#usecases">Use Cases</a><a href="#waitlist">Waitlist</a></div>
+  </div>
+</footer>
+
+<script>
+// ═══ Custom Cursor ═══
+const dot = document.getElementById('curDot');
+const ring = document.getElementById('curRing');
+let mx = 0, my = 0, dx = 0, dy = 0, rx = 0, ry = 0;
+
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+document.addEventListener('mousedown', () => document.body.classList.add('cur-active'));
+document.addEventListener('mouseup', () => document.body.classList.remove('cur-active'));
+
+// Hover targets
+const hoverEls = 'a, button, .btn, .card, .stat, .mod-card, .pipe-node, .nav-links a';
+document.querySelectorAll(hoverEls).forEach(el => {
+  el.addEventListener('mouseenter', () => document.body.classList.add('cur-hover'));
+  el.addEventListener('mouseleave', () => document.body.classList.remove('cur-hover'));
+});
+
+function cursorLoop() {
+  // Dot follows exactly
+  dx += (mx - dx) * 0.9;
+  dy += (my - dy) * 0.9;
+  dot.style.left = dx + 'px';
+  dot.style.top = dy + 'px';
+  // Ring follows with lag
+  rx += (mx - rx) * 0.15;
+  ry += (my - ry) * 0.15;
+  ring.style.left = rx + 'px';
+  ring.style.top = ry + 'px';
+  requestAnimationFrame(cursorLoop);
+}
+cursorLoop();
+
+// ═══ Tilt Cards ═══
+document.querySelectorAll('.tilt-card').forEach(card => {
+  card.addEventListener('mousemove', e => {
+    const rect = card.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    card.style.transform = `perspective(800px) rotateY(${x * 8}deg) rotateX(${-y * 8}deg) translateY(-4px)`;
+  });
+  card.addEventListener('mouseleave', () => {
+    card.style.transform = '';
+  });
+});
+
+// ═══ Magnetic Buttons ═══
+document.querySelectorAll('.magnetic').forEach(btn => {
+  btn.addEventListener('mousemove', e => {
+    const rect = btn.getBoundingClientRect();
+    const x = e.clientX - rect.left - rect.width / 2;
+    const y = e.clientY - rect.top - rect.height / 2;
+    btn.style.transform = `translate(${x * 0.2}px, ${y * 0.2}px)`;
+  });
+  btn.addEventListener('mouseleave', () => {
+    btn.style.transform = '';
+  });
+});
+
+// ═══ Scroll Reveal ═══
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('vis'); io.unobserve(e.target); } });
+}, { threshold: 0.08, rootMargin: '0px 0px -60px 0px' });
+document.querySelectorAll('.sr').forEach(el => io.observe(el));
+
+// ═══ Nav scroll ═══
+let ticking = false;
+window.addEventListener('scroll', () => {
+  if (!ticking) { requestAnimationFrame(() => {
+    document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 40);
+    ticking = false;
+  }); ticking = true; }
+});
+
+// ═══ Counter Animation ═══
+const counterIO = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    const el = e.target;
+    const target = parseInt(el.dataset.count);
+    if (!target) return;
+    let current = 0;
+    const step = Math.max(1, Math.floor(target / 30));
+    const interval = setInterval(() => {
+      current += step;
+      if (current >= target) { current = target; clearInterval(interval); }
+      el.textContent = current;
+    }, 30);
+    counterIO.unobserve(el);
+  });
+}, { threshold: 0.5 });
+document.querySelectorAll('[data-count]').forEach(el => counterIO.observe(el));
+
+// ═══ Terminal Typewriter ═══
+const sequences = [
+  [
+    { text: '$ ', cls: 'p', delay: 0 },
+    { text: 'backlogist', cls: 'c', delay: 40 },
+    { text: ' create title:', cls: 'c', delay: 30 },
+    { text: '"Auth middleware"', cls: 's', delay: 30 },
+    { text: ' owner:T1 mode:Code', cls: 'f', delay: 30 },
+    { text: '\n', delay: 400 },
+    { text: 'Created #352 — Auth middleware\n', cls: 'o', delay: 12 },
+    { text: 'Knowledge: 14 sources, 23 matches\n', cls: 'o', delay: 12 },
+    { text: 'Next: ', cls: 'd', delay: 12 },
+    { text: '/prepare-task #352', cls: 'p', delay: 12 },
+  ],
+  [
+    { text: '$ ', cls: 'p', delay: 0 },
+    { text: 'backlogist', cls: 'c', delay: 40 },
+    { text: ' #352', cls: 'f', delay: 40 },
+    { text: ' take', cls: 'c', delay: 40 },
+    { text: '\n', delay: 400 },
+    { text: 'Status: READY \u2192 IN_PROGRESS\n', cls: 'ok', delay: 12 },
+    { text: 'Timer started. task_plan injected.\n', cls: 'o', delay: 12 },
+  ],
+  [
+    { text: '$ ', cls: 'p', delay: 0 },
+    { text: 'backlogist', cls: 'c', delay: 40 },
+    { text: ' #352', cls: 'f', delay: 40 },
+    { text: ' close', cls: 'c', delay: 40 },
+    { text: '\n', delay: 400 },
+    { text: 'Reviewer: base + code + integration\n', cls: 'o', delay: 12 },
+    { text: 'Verdict: ', cls: 'o', delay: 12 },
+    { text: 'PASS', cls: 'ok', delay: 12 },
+    { text: ' (coverage: 87/100)\n', cls: 'o', delay: 12 },
+    { text: 'Done-when: 3/3 met\n', cls: 'ok', delay: 12 },
+    { text: 'Status: IN_REVIEW \u2192 AWAITING_APPROVAL\n', cls: 'o', delay: 12 },
+  ],
+  [
+    { text: '$ ', cls: 'p', delay: 0 },
+    { text: 'backlogist', cls: 'c', delay: 40 },
+    { text: ' ask ', cls: 'c', delay: 40 },
+    { text: '"what blocks the SEO pipeline?"', cls: 's', delay: 25 },
+    { text: '\n', delay: 600 },
+    { text: '#280 SEO collector (BLOCKED by #215)\n', cls: 'o', delay: 12 },
+    { text: '#215 Signal migration (IN_PROGRESS, T1)\n', cls: 'w', delay: 12 },
+    { text: 'Critical path: #215 \u2192 #280 \u2192 21 tasks\n', cls: 'ok', delay: 12 },
+    { text: 'ETA: ~2 sessions if T1 unblocked\n', cls: 'd', delay: 12 },
+  ],
+];
+
+const termEl = document.getElementById('typewriter');
+let seqIdx = 0;
+async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+async function typeSequence(parts) {
+  for (const part of parts) {
+    if (part.text === '\n') { termEl.innerHTML += '<br>'; await sleep(part.delay || 200); continue; }
+    for (const ch of part.text.split('')) {
+      const cur = termEl.querySelector('.term-cursor');
+      if (cur) cur.remove();
+      termEl.innerHTML += part.cls ? `<span class="${part.cls}">${ch}</span>` : ch;
+      termEl.innerHTML += '<span class="term-cursor"></span>';
+      await sleep(part.delay || 30);
+    }
+  }
+}
+async function runTypewriter() {
+  while (true) {
+    termEl.innerHTML = '';
+    await typeSequence(sequences[seqIdx]);
+    await sleep(3000);
+    seqIdx = (seqIdx + 1) % sequences.length;
+  }
+}
+setTimeout(runTypewriter, 1200);
+</script>
+</body>
+</html>
