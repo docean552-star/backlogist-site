@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Backlogist System Map — AX Platform</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/panzoom@9/dist/panzoom.min.js"></script>
 <style>
   :root {
     --bg: #0a0a0f;
@@ -104,18 +105,67 @@
     margin-left: 0.5rem;
   }
 
-  .mermaid {
+  .diagram-wrap {
+    position: relative;
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 8px;
-    padding: 2rem;
-    overflow-x: auto;
     margin-bottom: 1rem;
+    overflow: hidden;
   }
 
-  .mermaid svg {
-    max-width: 100%;
+  .diagram-wrap .mermaid {
+    padding: 2rem;
+    cursor: grab;
+  }
+
+  .diagram-wrap .mermaid:active { cursor: grabbing; }
+
+  .diagram-wrap svg {
+    max-width: none !important;
     height: auto;
+  }
+
+  .diagram-toolbar {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    display: flex;
+    gap: 0.3rem;
+    z-index: 10;
+  }
+
+  .diagram-toolbar button {
+    background: rgba(18, 18, 26, 0.9);
+    border: 1px solid var(--border);
+    color: var(--dim);
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+
+  .diagram-toolbar button:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .diagram-wrap.fullscreen {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 9999;
+    border-radius: 0;
+    margin: 0;
+    background: var(--bg);
+  }
+
+  .diagram-wrap.fullscreen .mermaid {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .note {
@@ -183,114 +233,152 @@
 
 <!-- ═══════════════════════════════════════════════ -->
 <section id="lifecycle">
-<h2>Full Task Lifecycle <span>models.py TRANSITIONS — all states, all paths, all fallbacks</span></h2>
+<h2>Full Task Lifecycle <span>models.py TRANSITIONS — 3 layers: happy path, fallbacks, exits</span></h2>
 
+<h3 style="color:var(--accent);font-size:0.9rem;margin:1.5rem 0 0.5rem">1. Happy Path — all 6 workflow variants</h3>
+<div class="diagram-wrap" id="dw-happy">
+<div class="diagram-toolbar">
+  <button onclick="resetZoom('dw-happy')">Reset</button>
+  <button onclick="toggleFS('dw-happy')">Fullscreen</button>
+</div>
+<div class="diagram-wrap" id="dw-auto-1">
+<div class="diagram-toolbar">
+  <button onclick="resetZoom('dw-auto-1')">Reset</button>
+  <button onclick="toggleFS('dw-auto-1')">Fullscreen</button>
+</div>
 <pre class="mermaid">
-%%{init: {'theme': 'dark', 'themeVariables': {'primaryColor': '#7c6cf0', 'lineColor': '#4ecdc4'}, 'flowchart': {'curve': 'basis', 'useMaxWidth': true}}}%%
-stateDiagram-v2
-    direction LR
+%%{init: {'theme': 'dark', 'themeVariables': {'primaryColor': '#7c6cf0', 'lineColor': '#4ecdc4'}}}%%
+graph LR
+    START(( )) --> BL[BACKLOG]
 
-    %% ── Main forward flow (code_task) ──
-    [*] --> BACKLOG
-    BACKLOG --> PLANNING : advance<br/>gate: title, owner, mode, why
-    PLANNING --> READY : advance<br/>gate: research.md, task_plan,<br/>done_when, spec-reviewer PASS
-    READY --> IN_PROGRESS : advance / take<br/>gate: KQ answered
-    IN_PROGRESS --> IN_REVIEW : advance<br/>gate: commits, tests,<br/>code-reviewer PASS
-    IN_REVIEW --> AWAITING_APPROVAL : advance<br/>gate: all reviews PASS
-    AWAITING_APPROVAL --> DONE : advance --approve<br/>gate: closure-reviewer PASS,<br/>children terminal, HANDOFF
+    BL -->|"advance<br/>gate: title, owner,<br/>mode, why"| PL[PLANNING]
 
-    %% ── Marketing flow (diverges at PLANNING) ──
-    PLANNING --> BRIEFING : advance (marketing)<br/>gate: research.md
-    BRIEFING --> IN_PROGRESS : advance<br/>gate: brief.md
+    %% code_task / think_task / smm_task
+    PL -->|"advance<br/>gate: research.md,<br/>task_plan, done_when,<br/>spec-reviewer PASS"| RD[READY]
+    RD -->|"take / advance<br/>gate: KQ answered"| IP[IN_PROGRESS]
 
-    %% ── SEO flow (diverges at IN_PROGRESS) ──
-    IN_PROGRESS --> DATA_REVIEW : advance (seo)<br/>gate: commits, data/ files,<br/>seo-strategist PASS
-    DATA_REVIEW --> AWAITING_APPROVAL : advance
+    %% code_task / smm_task
+    IP -->|"advance (code)<br/>gate: commits, tests,<br/>code-reviewer PASS"| IR[IN_REVIEW]
+    IR -->|"gate: all<br/>reviews PASS"| AA[AWAITING_APPROVAL]
 
-    %% ── Marketing review (diverges at IN_PROGRESS) ──
-    IN_PROGRESS --> REVIEW : advance (marketing)<br/>gate: commits, brief.md,<br/>marketing-strategist PASS
-    REVIEW --> AWAITING_APPROVAL : advance
+    %% seo
+    IP -->|"advance (seo)<br/>gate: commits,<br/>data/ files,<br/>seo-strategist PASS"| DR[DATA_REVIEW]
+    DR --> AA
 
-    %% ── Review FAIL fallbacks ──
-    IN_REVIEW --> IN_PROGRESS : review FAIL<br/>fix issues, re-submit
-    DATA_REVIEW --> IN_PROGRESS : data incomplete
-    REVIEW --> IN_PROGRESS : review FAIL
+    %% marketing
+    PL -->|"advance (marketing)<br/>gate: research.md"| BR[BRIEFING]
+    BR -->|"advance<br/>gate: brief.md"| IP
+    IP -->|"advance (marketing)<br/>gate: commits, brief.md,<br/>mkt-strategist PASS"| RV[REVIEW]
+    RV --> AA
 
-    %% ── Operator reject ──
-    AWAITING_APPROVAL --> IN_PROGRESS : operator rejects<br/>back to work
+    %% think_task (no IN_REVIEW)
+    IP -.->|"think_task<br/>(no review)"| AA
 
-    %% ── BLOCKED (from any active state) ──
-    BACKLOG --> BLOCKED : blocker found
-    PLANNING --> BLOCKED : blocker found
-    READY --> BLOCKED : blocker found
-    IN_PROGRESS --> BLOCKED : blocker found
-    BRIEFING --> BLOCKED : blocker found
-    REOPENED --> BLOCKED : blocker found
+    AA -->|"--approve<br/>gate: closure-reviewer,<br/>children terminal,<br/>HANDOFF entry"| DN[DONE]
 
-    %% ── BLOCKED recovery ──
-    BLOCKED --> READY : blocker resolved
-    BLOCKED --> BRIEFING : blocker resolved (marketing)
-    BLOCKED --> BACKLOG : blocker resolved (reset)
-
-    %% ── Rollback paths ──
-    READY --> BACKLOG : demote
-    READY --> PLANNING : needs rework
-    IN_PROGRESS --> READY : release
-    IN_PROGRESS --> BRIEFING : needs re-brief (marketing)
-
-    %% ── DONE recovery ──
-    DONE --> REOPENED : child created on DONE parent<br/>or operator reopens
-    REOPENED --> PLANNING : advance<br/>re-enter full flow
-    REOPENED --> BRIEFING : advance (marketing)
-    REOPENED --> IN_PROGRESS : fast-track
-
-    %% ── Terminal exits (from any non-terminal) ──
-    BACKLOG --> CANCELLED : cancel --reason
-    PLANNING --> CANCELLED : cancel
-    BRIEFING --> CANCELLED : cancel
-    READY --> CANCELLED : cancel
-    IN_PROGRESS --> CANCELLED : cancel
-    IN_REVIEW --> CANCELLED : cancel
-    DATA_REVIEW --> CANCELLED : cancel
-    REVIEW --> CANCELLED : cancel
-    AWAITING_APPROVAL --> CANCELLED : cancel
-    DONE --> CANCELLED : cancel
-
-    BACKLOG --> SUPERSEDED : supersede --by #M
-    PLANNING --> SUPERSEDED : supersede
-    READY --> SUPERSEDED : supersede
-    IN_PROGRESS --> SUPERSEDED : supersede
-    IN_REVIEW --> SUPERSEDED : supersede
-    AWAITING_APPROVAL --> SUPERSEDED : supersede
-    DONE --> SUPERSEDED : supersede
-
-    %% ── Legacy ──
-    state "TODO (legacy)" as TODO
-    TODO --> PLANNING : advance
-    TODO --> BRIEFING : advance (marketing)
-    TODO --> IN_PROGRESS : legacy fast-track
-
-    %% ── Styling ──
-    classDef terminal fill:#1a0a0a,color:#ff6b6b
-    classDef human fill:#2d1a1a,color:#ff6b6b
-    classDef active fill:#0a1a0a,color:#4ecdc4
-    classDef blocked fill:#2d2d0a,color:#f0c96c
-
-    class CANCELLED terminal
-    class SUPERSEDED terminal
-    class AWAITING_APPROVAL human
-    class IN_PROGRESS active
-    class BLOCKED blocked
+    style BL fill:#1a1a2e,stroke:#7c6cf0,color:#7c6cf0
+    style DN fill:#0d2818,stroke:#4ecdc4,color:#4ecdc4
+    style AA fill:#2d1a1a,stroke:#ff6b6b,color:#ff6b6b
+    style IP fill:#0a1a0a,stroke:#4ecdc4,color:#4ecdc4
+    style BR fill:#2d2d1a,stroke:#f0c96c,color:#f0c96c
+    style DR fill:#1a2d2d,stroke:#4ecdc4,color:#4ecdc4
+    style RV fill:#1a2d2d,stroke:#4ecdc4,color:#4ecdc4
+    style IR fill:#1a2d2d,stroke:#4ecdc4,color:#4ecdc4
 </pre>
+</div>
+</div>
+
+<h3 style="color:var(--accent3);font-size:0.9rem;margin:1.5rem 0 0.5rem">2. Fallbacks — review fail, reject, rollback, blocked, reopen</h3>
+<div class="diagram-wrap" id="dw-fallback">
+<div class="diagram-toolbar">
+  <button onclick="resetZoom('dw-fallback')">Reset</button>
+  <button onclick="toggleFS('dw-fallback')">Fullscreen</button>
+</div>
+<div class="diagram-wrap" id="dw-auto-2">
+<div class="diagram-toolbar">
+  <button onclick="resetZoom('dw-auto-2')">Reset</button>
+  <button onclick="toggleFS('dw-auto-2')">Fullscreen</button>
+</div>
+<pre class="mermaid">
+%%{init: {'theme': 'dark', 'themeVariables': {'primaryColor': '#ff6b6b', 'lineColor': '#ff6b6b'}}}%%
+graph TB
+    subgraph fail["Review FAIL → back to work"]
+        IR2[IN_REVIEW] -->|"FAIL / NEEDS_WORK"| IP2[IN_PROGRESS]
+        DR2[DATA_REVIEW] -->|"data incomplete"| IP2
+        RV2[REVIEW] -->|"review FAIL"| IP2
+        AA2[AWAITING_APPROVAL] -->|"operator rejects"| IP2
+    end
+
+    subgraph rollback["Rollback paths"]
+        RD3[READY] -->|"demote"| BL3[BACKLOG]
+        RD3 -->|"needs rework"| PL3[PLANNING]
+        IP3[IN_PROGRESS] -->|"release"| RD3
+        IP3 -->|"re-brief"| BR3[BRIEFING]
+    end
+
+    subgraph blocked["BLOCKED recovery"]
+        direction LR
+        ANY["Any active state<br/>BACKLOG, PLANNING, READY,<br/>IN_PROGRESS, BRIEFING,<br/>REOPENED"] -->|"blocker found"| BLK[BLOCKED]
+        BLK -->|"resolved"| RD4[READY]
+        BLK -->|"resolved"| BR4[BRIEFING]
+        BLK -->|"resolved"| BL4[BACKLOG]
+    end
+
+    subgraph reopen["DONE recovery"]
+        DN5[DONE] -->|"child created<br/>or operator reopens"| RE5[REOPENED]
+        RE5 -->|"advance"| PL5[PLANNING]
+        RE5 -->|"advance (mkt)"| BR5[BRIEFING]
+        RE5 -->|"fast-track"| IP5[IN_PROGRESS]
+        RE5 -->|"blocker"| BLK5[BLOCKED]
+    end
+
+    style BLK fill:#2d2d0a,stroke:#f0c96c,color:#f0c96c
+    style BLK5 fill:#2d2d0a,stroke:#f0c96c,color:#f0c96c
+    style IP2 fill:#0a1a0a,stroke:#4ecdc4,color:#4ecdc4
+    style RE5 fill:#1a1a2e,stroke:#7c6cf0,color:#7c6cf0
+</pre>
+</div>
+</div>
+
+<h3 style="color:var(--dim);font-size:0.9rem;margin:1.5rem 0 0.5rem">3. Terminal exits + legacy</h3>
+<div class="diagram-wrap" id="dw-terminal">
+<div class="diagram-toolbar">
+  <button onclick="resetZoom('dw-terminal')">Reset</button>
+  <button onclick="toggleFS('dw-terminal')">Fullscreen</button>
+</div>
+<div class="diagram-wrap" id="dw-auto-3">
+<div class="diagram-toolbar">
+  <button onclick="resetZoom('dw-auto-3')">Reset</button>
+  <button onclick="toggleFS('dw-auto-3')">Fullscreen</button>
+</div>
+<pre class="mermaid">
+%%{init: {'theme': 'dark'}}%%
+graph LR
+    ANY_STATE["Any non-terminal state<br/>BACKLOG, PLANNING, BRIEFING,<br/>READY, IN_PROGRESS, IN_REVIEW,<br/>DATA_REVIEW, REVIEW,<br/>AWAITING_APPROVAL, DONE"]
+
+    ANY_STATE -->|"cancel --reason"| CAN[CANCELLED]
+    ANY_STATE -->|"supersede --by #M"| SUP[SUPERSEDED]
+    ANY_STATE -->|"manual"| WONT[WONT-DO]
+
+    subgraph legacy["Legacy compatibility"]
+        TODO["TODO<br/>(alias for BACKLOG)"]
+        TODO -->|"advance"| PL6[PLANNING]
+        TODO -->|"advance (mkt)"| BR6[BRIEFING]
+        TODO -->|"legacy fast-track"| IP6[IN_PROGRESS]
+    end
+
+    style CAN fill:#1a0a0a,stroke:#ff6b6b,color:#ff6b6b
+    style SUP fill:#1a0a0a,stroke:#ff6b6b,color:#ff6b6b
+    style WONT fill:#1a0a0a,stroke:#ff6b6b,color:#ff6b6b
+    style TODO fill:#1a1a2e,stroke:#6e6e82,color:#6e6e82
+</pre>
+</div>
+</div>
 
 <div class="note">
-Forward flow (thick): BACKLOG → PLANNING → READY → IN_PROGRESS → IN_REVIEW → AWAITING_APPROVAL → DONE.<br/>
-Marketing divergence: PLANNING → BRIEFING → IN_PROGRESS → REVIEW → AWAITING_APPROVAL → DONE.<br/>
-SEO divergence: IN_PROGRESS → DATA_REVIEW → AWAITING_APPROVAL → DONE.<br/>
-Fallback on FAIL: review stages → IN_PROGRESS (fix and re-submit).<br/>
-BLOCKED: from any active state, recovery to READY/BRIEFING/BACKLOG when blocker resolved.<br/>
-REOPENED: DONE parent auto-reopened when child created. Re-enters at PLANNING.<br/>
-Terminal exits: CANCELLED and SUPERSEDED reachable from any non-terminal state.
+<strong>Happy path</strong>: 6 variants diverge at PLANNING (marketing→BRIEFING) and IN_PROGRESS (code→IN_REVIEW, seo→DATA_REVIEW, marketing→REVIEW, think→direct AA).<br/>
+<strong>Fallbacks</strong>: every review stage can reject back to IN_PROGRESS. Operator can reject from AWAITING_APPROVAL. BLOCKED from any active state, recovers when blocker resolved. DONE auto-reopens when child created.<br/>
+<strong>Terminal</strong>: CANCELLED, SUPERSEDED, WONT-DO reachable from anywhere. TODO is legacy alias.
 </div>
 </section>
 
@@ -298,6 +386,11 @@ Terminal exits: CANCELLED and SUPERSEDED reachable from any non-terminal state.
 <section id="workflows">
 <h2>Workflows <span>workflows.yaml — 6 lifecycle types</span></h2>
 
+<div class="diagram-wrap" id="dw-auto-4">
+<div class="diagram-toolbar">
+  <button onclick="resetZoom('dw-auto-4')">Reset</button>
+  <button onclick="toggleFS('dw-auto-4')">Fullscreen</button>
+</div>
 <pre class="mermaid">
 %%{init: {'theme': 'dark', 'themeVariables': {'primaryColor': '#7c6cf0', 'primaryTextColor': '#e0e0e8', 'lineColor': '#4ecdc4', 'secondaryColor': '#1e1e2e'}}}%%
 graph LR
@@ -337,6 +430,7 @@ graph LR
     classDef review fill:#1a2d2d,stroke:#4ecdc4,color:#4ecdc4
     classDef brief fill:#2d2d1a,stroke:#f0c96c,color:#f0c96c
 </pre>
+</div>
 <div class="legend">
   <div class="legend-item"><div class="legend-dot" style="background:#7c6cf0"></div>Start</div>
   <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4"></div>Review stage</div>
@@ -349,6 +443,11 @@ graph LR
 <section id="gates">
 <h2>Transition Gates <span>transition_gates.py — what blocks each transition</span></h2>
 
+<div class="diagram-wrap" id="dw-auto-5">
+<div class="diagram-toolbar">
+  <button onclick="resetZoom('dw-auto-5')">Reset</button>
+  <button onclick="toggleFS('dw-auto-5')">Fullscreen</button>
+</div>
 <pre class="mermaid">
 %%{init: {'theme': 'dark'}}%%
 graph TB
@@ -377,12 +476,18 @@ graph TB
     style DONE fill:#0d2818,stroke:#4ecdc4,color:#4ecdc4
     style AA fill:#2d1a1a,stroke:#ff6b6b,color:#ff6b6b
 </pre>
+</div>
 </section>
 
 <!-- ═══════════════════════════════════════════════ -->
 <section id="prepare">
 <h2>Prepare Pipeline <span>prepare.py — 7-step state machine for task preparation</span></h2>
 
+<div class="diagram-wrap" id="dw-auto-6">
+<div class="diagram-toolbar">
+  <button onclick="resetZoom('dw-auto-6')">Reset</button>
+  <button onclick="toggleFS('dw-auto-6')">Fullscreen</button>
+</div>
 <pre class="mermaid">
 %%{init: {'theme': 'dark'}}%%
 graph LR
@@ -399,6 +504,7 @@ graph LR
     style S1 fill:#2d1a1a,stroke:#ff6b6b,color:#ff6b6b
     style S5 fill:#1a1a2e,stroke:#7c6cf0,color:#7c6cf0
 </pre>
+</div>
 <div class="note">★ Step 1b (answers) is NEED_HUMAN — operator must answer questions before pipeline proceeds. All other AI steps are autonomous.</div>
 </section>
 
@@ -406,6 +512,11 @@ graph LR
 <section id="scoring">
 <h2>Scoring <span>scoring.py — priority calculation</span></h2>
 
+<div class="diagram-wrap" id="dw-auto-7">
+<div class="diagram-toolbar">
+  <button onclick="resetZoom('dw-auto-7')">Reset</button>
+  <button onclick="toggleFS('dw-auto-7')">Fullscreen</button>
+</div>
 <pre class="mermaid">
 %%{init: {'theme': 'dark'}}%%
 graph TB
@@ -443,12 +554,18 @@ graph TB
     style EFF fill:#0d2818,stroke:#4ecdc4,color:#4ecdc4
     style ZERO fill:#2d1a1a,stroke:#ff6b6b,color:#ff6b6b
 </pre>
+</div>
 </section>
 
 <!-- ═══════════════════════════════════════════════ -->
 <section id="hooks">
 <h2>Hooks <span>hooks/ — Claude Code event handlers</span></h2>
 
+<div class="diagram-wrap" id="dw-auto-8">
+<div class="diagram-toolbar">
+  <button onclick="resetZoom('dw-auto-8')">Reset</button>
+  <button onclick="toggleFS('dw-auto-8')">Fullscreen</button>
+</div>
 <pre class="mermaid">
 %%{init: {'theme': 'dark'}}%%
 graph TB
@@ -472,12 +589,18 @@ graph TB
     style HC fill:#2d1a1a,stroke:#ff6b6b,color:#ff6b6b
     style HEB fill:#2d1a1a,stroke:#ff6b6b,color:#ff6b6b
 </pre>
+</div>
 </section>
 
 <!-- ═══════════════════════════════════════════════ -->
 <section id="reviews">
 <h2>Review System <span>reviewer/ — AI pipeline + subagent verdicts</span></h2>
 
+<div class="diagram-wrap" id="dw-auto-9">
+<div class="diagram-toolbar">
+  <button onclick="resetZoom('dw-auto-9')">Reset</button>
+  <button onclick="toggleFS('dw-auto-9')">Fullscreen</button>
+</div>
 <pre class="mermaid">
 %%{init: {'theme': 'dark'}}%%
 graph TB
@@ -517,12 +640,18 @@ graph TB
     style PASS fill:#0d2818,stroke:#4ecdc4,color:#4ecdc4
     style FAIL fill:#2d1a1a,stroke:#ff6b6b,color:#ff6b6b
 </pre>
+</div>
 </section>
 
 <!-- ═══════════════════════════════════════════════ -->
 <section id="routing">
 <h2>TASKOWNERS Routing <span>taskowners.yaml — owner → workflow + agents</span></h2>
 
+<div class="diagram-wrap" id="dw-auto-10">
+<div class="diagram-toolbar">
+  <button onclick="resetZoom('dw-auto-10')">Reset</button>
+  <button onclick="toggleFS('dw-auto-10')">Fullscreen</button>
+</div>
 <pre class="mermaid">
 %%{init: {'theme': 'dark'}}%%
 graph LR
@@ -563,12 +692,18 @@ graph LR
     R8 --> A8
     R9 --> A9
 </pre>
+</div>
 </section>
 
 <!-- ═══════════════════════════════════════════════ -->
 <section id="commands">
 <h2>CLI Commands <span>backlogist.py — all entry points</span></h2>
 
+<div class="diagram-wrap" id="dw-auto-11">
+<div class="diagram-toolbar">
+  <button onclick="resetZoom('dw-auto-11')">Reset</button>
+  <button onclick="toggleFS('dw-auto-11')">Fullscreen</button>
+</div>
 <pre class="mermaid">
 %%{init: {'theme': 'dark'}}%%
 graph TB
@@ -627,12 +762,18 @@ graph TB
         verify["verify #N"]
     end
 </pre>
+</div>
 </section>
 
 <!-- ═══════════════════════════════════════════════ -->
 <section id="storage">
 <h2>Storage <span>storage/ — PostgreSQL + SQLite</span></h2>
 
+<div class="diagram-wrap" id="dw-auto-12">
+<div class="diagram-toolbar">
+  <button onclick="resetZoom('dw-auto-12')">Reset</button>
+  <button onclick="toggleFS('dw-auto-12')">Fullscreen</button>
+</div>
 <pre class="mermaid">
 %%{init: {'theme': 'dark'}}%%
 graph TB
@@ -664,12 +805,18 @@ graph TB
 
     style PG fill:#1a1a2e,stroke:#7c6cf0,color:#7c6cf0
 </pre>
+</div>
 </section>
 
 <!-- ═══════════════════════════════════════════════ -->
 <section id="subtasks">
 <h2>Subtask System <span>parent/child hierarchy</span></h2>
 
+<div class="diagram-wrap" id="dw-auto-13">
+<div class="diagram-toolbar">
+  <button onclick="resetZoom('dw-auto-13')">Reset</button>
+  <button onclick="toggleFS('dw-auto-13')">Fullscreen</button>
+</div>
 <pre class="mermaid">
 %%{init: {'theme': 'dark'}}%%
 graph TB
@@ -699,12 +846,18 @@ graph TB
     style CLOSE fill:#0d2818,stroke:#4ecdc4,color:#4ecdc4
     style BLOCK fill:#2d1a1a,stroke:#ff6b6b,color:#ff6b6b
 </pre>
+</div>
 </section>
 
 <!-- ═══════════════════════════════════════════════ -->
 <section id="mcp">
 <h2>MCP Tools <span>mcp/ — 16 tools via JSON-RPC stdio</span></h2>
 
+<div class="diagram-wrap" id="dw-auto-14">
+<div class="diagram-toolbar">
+  <button onclick="resetZoom('dw-auto-14')">Reset</button>
+  <button onclick="toggleFS('dw-auto-14')">Fullscreen</button>
+</div>
 <pre class="mermaid">
 %%{init: {'theme': 'dark'}}%%
 graph TB
@@ -747,6 +900,7 @@ graph TB
     MCP_SERVER --> Comms
     MCP_SERVER --> PlanMCP
 </pre>
+</div>
 </section>
 
 </main>
@@ -772,10 +926,48 @@ graph TB
       fontSize: '13px',
     },
     flowchart: {
-      useMaxWidth: true,
+      useMaxWidth: false,
       htmlLabels: true,
       curve: 'basis',
     },
+  });
+
+  // Pan + Zoom on all diagram wraps
+  const pzInstances = {};
+  mermaid.run().then(() => {
+    document.querySelectorAll('.diagram-wrap').forEach(wrap => {
+      const svg = wrap.querySelector('svg');
+      if (svg && typeof panzoom !== 'undefined') {
+        svg.style.cursor = 'grab';
+        pzInstances[wrap.id] = panzoom(svg, {
+          maxZoom: 5,
+          minZoom: 0.3,
+          smoothScroll: false,
+          zoomDoubleClickSpeed: 1,
+        });
+      }
+    });
+  });
+
+  function resetZoom(id) {
+    const pz = pzInstances[id];
+    if (pz) pz.moveTo(0, 0); pz && pz.zoomAbs(0, 0, 1);
+  }
+
+  function toggleFS(id) {
+    const wrap = document.getElementById(id);
+    if (!wrap) return;
+    wrap.classList.toggle('fullscreen');
+    // Reset zoom on toggle
+    const pz = pzInstances[id];
+    if (pz) { setTimeout(() => { pz.moveTo(0, 0); pz.zoomAbs(0, 0, 1); }, 100); }
+  }
+
+  // ESC to exit fullscreen
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.diagram-wrap.fullscreen').forEach(w => w.classList.remove('fullscreen'));
+    }
   });
 </script>
 
