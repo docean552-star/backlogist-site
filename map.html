@@ -233,16 +233,169 @@
 
 <!-- ═══════════════════════════════════════════════ -->
 <section id="lifecycle">
-<h2>Full Task Lifecycle <span>models.py TRANSITIONS — 3 layers: happy path, fallbacks, exits</span></h2>
+<h2>Full Task Lifecycle <span>models.py TRANSITIONS — master view + 3 detail layers</span></h2>
 
-<h3 style="color:var(--accent);font-size:0.9rem;margin:1.5rem 0 0.5rem">1. Happy Path — all 6 workflow variants</h3>
+<h3 style="color:var(--accent);font-size:0.9rem;margin:1.5rem 0 0.5rem">Master — all states, all transitions, all gates</h3>
+<div class="diagram-wrap" id="dw-master" style="min-height:600px">
+<div class="diagram-toolbar">
+  <button onclick="zoomIn('dw-master')">+</button>
+  <button onclick="zoomOut('dw-master')">-</button>
+  <button onclick="resetZoom('dw-master')">Reset</button>
+  <button onclick="toggleFS('dw-master')">Fullscreen</button>
+</div>
+<pre class="mermaid">
+%%{init: {'theme': 'dark', 'themeVariables': {'primaryColor': '#7c6cf0', 'lineColor': '#555'}, 'flowchart': {'useMaxWidth': false, 'htmlLabels': true, 'curve': 'basis', 'nodeSpacing': 60, 'rankSpacing': 80}}}%%
+graph TD
+    %% ── ENTRY ──
+    CREATE["backlogist create<br/>TASKOWNERS assigns<br/>workflow + agents"] --> BL
+
+    %% ── MAIN STATES ──
+    BL([BACKLOG]):::start
+    PL([PLANNING])
+    BR([BRIEFING]):::brief
+    RD([READY])
+    IP([IN_PROGRESS]):::active
+    IR([IN_REVIEW]):::review
+    DR([DATA_REVIEW]):::review
+    RV([REVIEW]):::review
+    AA([AWAITING_APPROVAL]):::human
+    DN([DONE]):::done
+    BLK([BLOCKED]):::blocked
+    RE([REOPENED]):::reopen
+    CAN([CANCELLED]):::terminal
+    SUP([SUPERSEDED]):::terminal
+    TODO([TODO legacy]):::dim
+
+    %% ═══════════ FORWARD FLOW ═══════════
+
+    BL -->|"advance<br/>gate: title, owner, mode, why"| PL
+
+    %% code / think / smm / research → READY
+    PL -->|"advance<br/>gate: research.md ≥30 lines<br/>task_plan + quality<br/>done_when<br/>spec-reviewer PASS<br/>prepare complete"| RD
+
+    %% marketing → BRIEFING
+    PL -->|"advance (marketing)<br/>gate: research.md"| BR
+
+    BR -->|"advance<br/>gate: brief.md"| IP
+
+    RD -->|"take / advance<br/>gate: all KQ answered"| IP
+
+    %% code / smm → IN_REVIEW
+    IP -->|"advance (code/smm)<br/>gate: git commits #N<br/>test files + assertions<br/>code-reviewer PASS fresh<br/>all required_reviews"| IR
+
+    %% seo → DATA_REVIEW
+    IP -->|"advance (seo)<br/>gate: git commits #N<br/>our-marketing/data/ files<br/>seo-strategist PASS"| DR
+
+    %% marketing → REVIEW
+    IP -->|"advance (marketing)<br/>gate: git commits #N<br/>brief.md exists<br/>marketing-strategist PASS"| RV
+
+    %% think → direct AA (no review stage)
+    IP -.->|"advance (think)<br/>no review stage"| AA
+
+    %% research → direct AA
+    IP -.->|"advance (research)<br/>no review stage"| AA
+
+    IR -->|"gate: all reviews PASS"| AA
+    DR -->|"advance"| AA
+    RV -->|"advance"| AA
+
+    AA -->|"--approve<br/>gate: closure-reviewer PASS<br/>all children terminal<br/>HANDOFF entry"| DN
+
+    %% ═══════════ REVIEW FAIL ═══════════
+
+    IR -->|"FAIL / NEEDS_WORK<br/>fix issues"| IP
+    DR -->|"data incomplete"| IP
+    RV -->|"review FAIL"| IP
+    AA -->|"operator rejects"| IP
+
+    %% ═══════════ ROLLBACK ═══════════
+
+    RD -->|"demote"| BL
+    RD -->|"needs rework"| PL
+    IP -->|"release"| RD
+    IP -->|"needs re-brief"| BR
+
+    %% ═══════════ BLOCKED ═══════════
+
+    BL -->|"blocker"| BLK
+    PL -->|"blocker"| BLK
+    RD -->|"blocker"| BLK
+    IP -->|"blocker"| BLK
+    BR -->|"blocker"| BLK
+    RE -->|"blocker"| BLK
+
+    BLK -->|"resolved"| RD
+    BLK -->|"resolved (mkt)"| BR
+    BLK -->|"resolved (reset)"| BL
+
+    %% ═══════════ REOPEN ═══════════
+
+    DN -->|"child created<br/>or operator reopens"| RE
+    RE -->|"advance"| PL
+    RE -->|"advance (mkt)"| BR
+    RE -->|"fast-track"| IP
+
+    %% ═══════════ TERMINAL ═══════════
+
+    BL --> CAN
+    PL --> CAN
+    BR --> CAN
+    RD --> CAN
+    IP --> CAN
+    IR --> CAN
+    DR --> CAN
+    RV --> CAN
+    AA --> CAN
+    DN --> CAN
+
+    BL --> SUP
+    PL --> SUP
+    RD --> SUP
+    IP --> SUP
+    IR --> SUP
+    AA --> SUP
+    DN --> SUP
+
+    %% ═══════════ LEGACY ═══════════
+    TODO -->|"advance"| PL
+    TODO -->|"advance (mkt)"| BR
+    TODO -->|"legacy"| IP
+
+    %% ═══════════ STYLING ═══════════
+    classDef start fill:#1a1a2e,stroke:#7c6cf0,color:#7c6cf0,stroke-width:2px
+    classDef done fill:#0d2818,stroke:#4ecdc4,color:#4ecdc4,stroke-width:2px
+    classDef human fill:#2d1a1a,stroke:#ff6b6b,color:#ff6b6b,stroke-width:2px
+    classDef active fill:#0a1a0a,stroke:#4ecdc4,color:#4ecdc4,stroke-width:2px
+    classDef review fill:#1a2d2d,stroke:#4ecdc4,color:#4ecdc4
+    classDef brief fill:#2d2d1a,stroke:#f0c96c,color:#f0c96c
+    classDef blocked fill:#2d2d0a,stroke:#f0c96c,color:#f0c96c,stroke-width:2px
+    classDef reopen fill:#1a1a2e,stroke:#7c6cf0,color:#7c6cf0
+    classDef terminal fill:#1a0a0a,stroke:#ff6b6b,color:#ff6b6b
+    classDef dim fill:#12121a,stroke:#3a3a4a,color:#6e6e82
+</pre>
+</div>
+
+<div class="legend" style="margin-bottom:2rem">
+  <div class="legend-item"><div class="legend-dot" style="background:#7c6cf0"></div>Start / Reopen</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4"></div>Active / Review</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Human gate / Terminal</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f0c96c"></div>Blocked / Briefing</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#6e6e82"></div>Legacy</div>
+  <div class="legend-item" style="color:var(--text)">Drag to pan. +/- to zoom. Fullscreen for detail.</div>
+</div>
+
+<h3 style="color:var(--accent);font-size:0.9rem;margin:1.5rem 0 0.5rem">Detail 1. Happy Path — all 6 workflow variants</h3>
 <div class="diagram-wrap" id="dw-happy">
 <div class="diagram-toolbar">
+  <button onclick="zoomIn('dw-happy')">+</button>
+  <button onclick="zoomOut('dw-happy')">-</button>
   <button onclick="resetZoom('dw-happy')">Reset</button>
   <button onclick="toggleFS('dw-happy')">Fullscreen</button>
 </div>
 <div class="diagram-wrap" id="dw-auto-1">
 <div class="diagram-toolbar">
+  <button onclick="zoomIn('dw-auto-1')">+</button>
+  <button onclick="zoomOut('dw-auto-1')">-</button>
   <button onclick="resetZoom('dw-auto-1')">Reset</button>
   <button onclick="toggleFS('dw-auto-1')">Fullscreen</button>
 </div>
@@ -291,11 +444,15 @@ graph LR
 <h3 style="color:var(--accent3);font-size:0.9rem;margin:1.5rem 0 0.5rem">2. Fallbacks — review fail, reject, rollback, blocked, reopen</h3>
 <div class="diagram-wrap" id="dw-fallback">
 <div class="diagram-toolbar">
+  <button onclick="zoomIn('dw-fallback')">+</button>
+  <button onclick="zoomOut('dw-fallback')">-</button>
   <button onclick="resetZoom('dw-fallback')">Reset</button>
   <button onclick="toggleFS('dw-fallback')">Fullscreen</button>
 </div>
 <div class="diagram-wrap" id="dw-auto-2">
 <div class="diagram-toolbar">
+  <button onclick="zoomIn('dw-auto-2')">+</button>
+  <button onclick="zoomOut('dw-auto-2')">-</button>
   <button onclick="resetZoom('dw-auto-2')">Reset</button>
   <button onclick="toggleFS('dw-auto-2')">Fullscreen</button>
 </div>
@@ -343,11 +500,15 @@ graph TB
 <h3 style="color:var(--dim);font-size:0.9rem;margin:1.5rem 0 0.5rem">3. Terminal exits + legacy</h3>
 <div class="diagram-wrap" id="dw-terminal">
 <div class="diagram-toolbar">
+  <button onclick="zoomIn('dw-terminal')">+</button>
+  <button onclick="zoomOut('dw-terminal')">-</button>
   <button onclick="resetZoom('dw-terminal')">Reset</button>
   <button onclick="toggleFS('dw-terminal')">Fullscreen</button>
 </div>
 <div class="diagram-wrap" id="dw-auto-3">
 <div class="diagram-toolbar">
+  <button onclick="zoomIn('dw-auto-3')">+</button>
+  <button onclick="zoomOut('dw-auto-3')">-</button>
   <button onclick="resetZoom('dw-auto-3')">Reset</button>
   <button onclick="toggleFS('dw-auto-3')">Fullscreen</button>
 </div>
@@ -388,6 +549,8 @@ graph LR
 
 <div class="diagram-wrap" id="dw-auto-4">
 <div class="diagram-toolbar">
+  <button onclick="zoomIn('dw-auto-4')">+</button>
+  <button onclick="zoomOut('dw-auto-4')">-</button>
   <button onclick="resetZoom('dw-auto-4')">Reset</button>
   <button onclick="toggleFS('dw-auto-4')">Fullscreen</button>
 </div>
@@ -445,6 +608,8 @@ graph LR
 
 <div class="diagram-wrap" id="dw-auto-5">
 <div class="diagram-toolbar">
+  <button onclick="zoomIn('dw-auto-5')">+</button>
+  <button onclick="zoomOut('dw-auto-5')">-</button>
   <button onclick="resetZoom('dw-auto-5')">Reset</button>
   <button onclick="toggleFS('dw-auto-5')">Fullscreen</button>
 </div>
@@ -485,6 +650,8 @@ graph TB
 
 <div class="diagram-wrap" id="dw-auto-6">
 <div class="diagram-toolbar">
+  <button onclick="zoomIn('dw-auto-6')">+</button>
+  <button onclick="zoomOut('dw-auto-6')">-</button>
   <button onclick="resetZoom('dw-auto-6')">Reset</button>
   <button onclick="toggleFS('dw-auto-6')">Fullscreen</button>
 </div>
@@ -514,6 +681,8 @@ graph LR
 
 <div class="diagram-wrap" id="dw-auto-7">
 <div class="diagram-toolbar">
+  <button onclick="zoomIn('dw-auto-7')">+</button>
+  <button onclick="zoomOut('dw-auto-7')">-</button>
   <button onclick="resetZoom('dw-auto-7')">Reset</button>
   <button onclick="toggleFS('dw-auto-7')">Fullscreen</button>
 </div>
@@ -563,6 +732,8 @@ graph TB
 
 <div class="diagram-wrap" id="dw-auto-8">
 <div class="diagram-toolbar">
+  <button onclick="zoomIn('dw-auto-8')">+</button>
+  <button onclick="zoomOut('dw-auto-8')">-</button>
   <button onclick="resetZoom('dw-auto-8')">Reset</button>
   <button onclick="toggleFS('dw-auto-8')">Fullscreen</button>
 </div>
@@ -598,6 +769,8 @@ graph TB
 
 <div class="diagram-wrap" id="dw-auto-9">
 <div class="diagram-toolbar">
+  <button onclick="zoomIn('dw-auto-9')">+</button>
+  <button onclick="zoomOut('dw-auto-9')">-</button>
   <button onclick="resetZoom('dw-auto-9')">Reset</button>
   <button onclick="toggleFS('dw-auto-9')">Fullscreen</button>
 </div>
@@ -649,6 +822,8 @@ graph TB
 
 <div class="diagram-wrap" id="dw-auto-10">
 <div class="diagram-toolbar">
+  <button onclick="zoomIn('dw-auto-10')">+</button>
+  <button onclick="zoomOut('dw-auto-10')">-</button>
   <button onclick="resetZoom('dw-auto-10')">Reset</button>
   <button onclick="toggleFS('dw-auto-10')">Fullscreen</button>
 </div>
@@ -701,6 +876,8 @@ graph LR
 
 <div class="diagram-wrap" id="dw-auto-11">
 <div class="diagram-toolbar">
+  <button onclick="zoomIn('dw-auto-11')">+</button>
+  <button onclick="zoomOut('dw-auto-11')">-</button>
   <button onclick="resetZoom('dw-auto-11')">Reset</button>
   <button onclick="toggleFS('dw-auto-11')">Fullscreen</button>
 </div>
@@ -771,6 +948,8 @@ graph TB
 
 <div class="diagram-wrap" id="dw-auto-12">
 <div class="diagram-toolbar">
+  <button onclick="zoomIn('dw-auto-12')">+</button>
+  <button onclick="zoomOut('dw-auto-12')">-</button>
   <button onclick="resetZoom('dw-auto-12')">Reset</button>
   <button onclick="toggleFS('dw-auto-12')">Fullscreen</button>
 </div>
@@ -814,6 +993,8 @@ graph TB
 
 <div class="diagram-wrap" id="dw-auto-13">
 <div class="diagram-toolbar">
+  <button onclick="zoomIn('dw-auto-13')">+</button>
+  <button onclick="zoomOut('dw-auto-13')">-</button>
   <button onclick="resetZoom('dw-auto-13')">Reset</button>
   <button onclick="toggleFS('dw-auto-13')">Fullscreen</button>
 </div>
@@ -855,6 +1036,8 @@ graph TB
 
 <div class="diagram-wrap" id="dw-auto-14">
 <div class="diagram-toolbar">
+  <button onclick="zoomIn('dw-auto-14')">+</button>
+  <button onclick="zoomOut('dw-auto-14')">-</button>
   <button onclick="resetZoom('dw-auto-14')">Reset</button>
   <button onclick="toggleFS('dw-auto-14')">Fullscreen</button>
 </div>
@@ -944,6 +1127,7 @@ graph TB
           minZoom: 0.3,
           smoothScroll: false,
           zoomDoubleClickSpeed: 1,
+          beforeWheel: function() { return true; },
         });
       }
     });
@@ -951,14 +1135,23 @@ graph TB
 
   function resetZoom(id) {
     const pz = pzInstances[id];
-    if (pz) pz.moveTo(0, 0); pz && pz.zoomAbs(0, 0, 1);
+    if (pz) { pz.moveTo(0, 0); pz.zoomAbs(0, 0, 1); }
+  }
+
+  function zoomIn(id) {
+    const pz = pzInstances[id];
+    if (pz) { const t = pz.getTransform(); pz.zoomAbs(t.x + 400, t.y + 300, t.scale * 1.4); }
+  }
+
+  function zoomOut(id) {
+    const pz = pzInstances[id];
+    if (pz) { const t = pz.getTransform(); pz.zoomAbs(t.x + 400, t.y + 300, t.scale * 0.7); }
   }
 
   function toggleFS(id) {
     const wrap = document.getElementById(id);
     if (!wrap) return;
     wrap.classList.toggle('fullscreen');
-    // Reset zoom on toggle
     const pz = pzInstances[id];
     if (pz) { setTimeout(() => { pz.moveTo(0, 0); pz.zoomAbs(0, 0, 1); }, 100); }
   }
