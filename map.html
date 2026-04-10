@@ -165,6 +165,7 @@
 </header>
 
 <nav>
+  <a href="#lifecycle">Full Lifecycle</a>
   <a href="#workflows">Workflows</a>
   <a href="#gates">Gates</a>
   <a href="#prepare">Prepare Pipeline</a>
@@ -179,6 +180,119 @@
 </nav>
 
 <main>
+
+<!-- ═══════════════════════════════════════════════ -->
+<section id="lifecycle">
+<h2>Full Task Lifecycle <span>models.py TRANSITIONS — all states, all paths, all fallbacks</span></h2>
+
+<pre class="mermaid">
+%%{init: {'theme': 'dark', 'themeVariables': {'primaryColor': '#7c6cf0', 'lineColor': '#4ecdc4'}, 'flowchart': {'curve': 'basis', 'useMaxWidth': true}}}%%
+stateDiagram-v2
+    direction LR
+
+    %% ── Main forward flow (code_task) ──
+    [*] --> BACKLOG
+    BACKLOG --> PLANNING : advance<br/>gate: title, owner, mode, why
+    PLANNING --> READY : advance<br/>gate: research.md, task_plan,<br/>done_when, spec-reviewer PASS
+    READY --> IN_PROGRESS : advance / take<br/>gate: KQ answered
+    IN_PROGRESS --> IN_REVIEW : advance<br/>gate: commits, tests,<br/>code-reviewer PASS
+    IN_REVIEW --> AWAITING_APPROVAL : advance<br/>gate: all reviews PASS
+    AWAITING_APPROVAL --> DONE : advance --approve<br/>gate: closure-reviewer PASS,<br/>children terminal, HANDOFF
+
+    %% ── Marketing flow (diverges at PLANNING) ──
+    PLANNING --> BRIEFING : advance (marketing)<br/>gate: research.md
+    BRIEFING --> IN_PROGRESS : advance<br/>gate: brief.md
+
+    %% ── SEO flow (diverges at IN_PROGRESS) ──
+    IN_PROGRESS --> DATA_REVIEW : advance (seo)<br/>gate: commits, data/ files,<br/>seo-strategist PASS
+    DATA_REVIEW --> AWAITING_APPROVAL : advance
+
+    %% ── Marketing review (diverges at IN_PROGRESS) ──
+    IN_PROGRESS --> REVIEW : advance (marketing)<br/>gate: commits, brief.md,<br/>marketing-strategist PASS
+    REVIEW --> AWAITING_APPROVAL : advance
+
+    %% ── Review FAIL fallbacks ──
+    IN_REVIEW --> IN_PROGRESS : review FAIL<br/>fix issues, re-submit
+    DATA_REVIEW --> IN_PROGRESS : data incomplete
+    REVIEW --> IN_PROGRESS : review FAIL
+
+    %% ── Operator reject ──
+    AWAITING_APPROVAL --> IN_PROGRESS : operator rejects<br/>back to work
+
+    %% ── BLOCKED (from any active state) ──
+    BACKLOG --> BLOCKED : blocker found
+    PLANNING --> BLOCKED : blocker found
+    READY --> BLOCKED : blocker found
+    IN_PROGRESS --> BLOCKED : blocker found
+    BRIEFING --> BLOCKED : blocker found
+    REOPENED --> BLOCKED : blocker found
+
+    %% ── BLOCKED recovery ──
+    BLOCKED --> READY : blocker resolved
+    BLOCKED --> BRIEFING : blocker resolved (marketing)
+    BLOCKED --> BACKLOG : blocker resolved (reset)
+
+    %% ── Rollback paths ──
+    READY --> BACKLOG : demote
+    READY --> PLANNING : needs rework
+    IN_PROGRESS --> READY : release
+    IN_PROGRESS --> BRIEFING : needs re-brief (marketing)
+
+    %% ── DONE recovery ──
+    DONE --> REOPENED : child created on DONE parent<br/>or operator reopens
+    REOPENED --> PLANNING : advance<br/>re-enter full flow
+    REOPENED --> BRIEFING : advance (marketing)
+    REOPENED --> IN_PROGRESS : fast-track
+
+    %% ── Terminal exits (from any non-terminal) ──
+    BACKLOG --> CANCELLED : cancel --reason
+    PLANNING --> CANCELLED : cancel
+    BRIEFING --> CANCELLED : cancel
+    READY --> CANCELLED : cancel
+    IN_PROGRESS --> CANCELLED : cancel
+    IN_REVIEW --> CANCELLED : cancel
+    DATA_REVIEW --> CANCELLED : cancel
+    REVIEW --> CANCELLED : cancel
+    AWAITING_APPROVAL --> CANCELLED : cancel
+    DONE --> CANCELLED : cancel
+
+    BACKLOG --> SUPERSEDED : supersede --by #M
+    PLANNING --> SUPERSEDED : supersede
+    READY --> SUPERSEDED : supersede
+    IN_PROGRESS --> SUPERSEDED : supersede
+    IN_REVIEW --> SUPERSEDED : supersede
+    AWAITING_APPROVAL --> SUPERSEDED : supersede
+    DONE --> SUPERSEDED : supersede
+
+    %% ── Legacy ──
+    state "TODO (legacy)" as TODO
+    TODO --> PLANNING : advance
+    TODO --> BRIEFING : advance (marketing)
+    TODO --> IN_PROGRESS : legacy fast-track
+
+    %% ── Styling ──
+    classDef terminal fill:#1a0a0a,color:#ff6b6b
+    classDef human fill:#2d1a1a,color:#ff6b6b
+    classDef active fill:#0a1a0a,color:#4ecdc4
+    classDef blocked fill:#2d2d0a,color:#f0c96c
+
+    class CANCELLED terminal
+    class SUPERSEDED terminal
+    class AWAITING_APPROVAL human
+    class IN_PROGRESS active
+    class BLOCKED blocked
+</pre>
+
+<div class="note">
+Forward flow (thick): BACKLOG → PLANNING → READY → IN_PROGRESS → IN_REVIEW → AWAITING_APPROVAL → DONE.<br/>
+Marketing divergence: PLANNING → BRIEFING → IN_PROGRESS → REVIEW → AWAITING_APPROVAL → DONE.<br/>
+SEO divergence: IN_PROGRESS → DATA_REVIEW → AWAITING_APPROVAL → DONE.<br/>
+Fallback on FAIL: review stages → IN_PROGRESS (fix and re-submit).<br/>
+BLOCKED: from any active state, recovery to READY/BRIEFING/BACKLOG when blocker resolved.<br/>
+REOPENED: DONE parent auto-reopened when child created. Re-enters at PLANNING.<br/>
+Terminal exits: CANCELLED and SUPERSEDED reachable from any non-terminal state.
+</div>
+</section>
 
 <!-- ═══════════════════════════════════════════════ -->
 <section id="workflows">
