@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Backlogist System Map — AX Platform</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --card: #12121a;
+    --border: #1e1e2e;
+    --text: #e0e0e8;
+    --dim: #6e6e82;
+    --accent: #7c6cf0;
+    --accent2: #4ecdc4;
+    --accent3: #ff6b6b;
+    --glow: rgba(124, 108, 240, 0.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+    line-height: 1.6;
+    padding: 0;
+  }
+
+  header {
+    padding: 3rem 2rem 2rem;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(124,108,240,0.08) 0%, transparent 100%);
+  }
+
+  header h1 {
+    font-size: 2rem;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    color: var(--accent);
+  }
+
+  header p {
+    color: var(--dim);
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(10, 10, 15, 0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0.75rem 2rem;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  nav a {
+    color: var(--dim);
+    text-decoration: none;
+    font-size: 0.75rem;
+    padding: 0.3rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+
+  nav a:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: var(--glow);
+  }
+
+  main {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  section {
+    margin-bottom: 3rem;
+  }
+
+  section h2 {
+    font-size: 1.1rem;
+    font-weight: 400;
+    color: var(--accent2);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: 0.04em;
+  }
+
+  section h2 span {
+    color: var(--dim);
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+  }
+
+  .mermaid {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 2rem;
+    overflow-x: auto;
+    margin-bottom: 1rem;
+  }
+
+  .mermaid svg {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .note {
+    color: var(--dim);
+    font-size: 0.75rem;
+    padding: 0.5rem 1rem;
+    border-left: 2px solid var(--border);
+    margin-top: 0.5rem;
+  }
+
+  .legend {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--dim);
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  footer {
+    text-align: center;
+    padding: 2rem;
+    color: var(--dim);
+    font-size: 0.7rem;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>BACKLOGIST SYSTEM MAP</h1>
+  <p>AX Platform task management — all workflows, gates, hooks, integrations</p>
+</header>
+
+<nav>
+  <a href="#workflows">Workflows</a>
+  <a href="#gates">Gates</a>
+  <a href="#prepare">Prepare Pipeline</a>
+  <a href="#scoring">Scoring</a>
+  <a href="#hooks">Hooks</a>
+  <a href="#reviews">Reviews</a>
+  <a href="#routing">TASKOWNERS</a>
+  <a href="#commands">Commands</a>
+  <a href="#storage">Storage</a>
+  <a href="#subtasks">Subtasks</a>
+  <a href="#mcp">MCP</a>
+</nav>
+
+<main>
+
+<!-- ═══════════════════════════════════════════════ -->
+<section id="workflows">
+<h2>Workflows <span>workflows.yaml — 6 lifecycle types</span></h2>
+
+<pre class="mermaid">
+%%{init: {'theme': 'dark', 'themeVariables': {'primaryColor': '#7c6cf0', 'primaryTextColor': '#e0e0e8', 'lineColor': '#4ecdc4', 'secondaryColor': '#1e1e2e'}}}%%
+graph LR
+    subgraph code_task["code_task (default)"]
+        direction LR
+        C1([BACKLOG]):::start --> C2([PLANNING]) --> C3([READY]) --> C4([IN_PROGRESS]) --> C5([IN_REVIEW]) --> C6([AWAITING_APPROVAL]):::human --> C7([DONE]):::done
+    end
+
+    subgraph think_task
+        direction LR
+        T1([BACKLOG]):::start --> T2([PLANNING]) --> T3([READY]) --> T4([IN_PROGRESS]) --> T6([AWAITING_APPROVAL]):::human --> T7([DONE]):::done
+    end
+
+    subgraph research_task
+        direction LR
+        R1([BACKLOG]):::start --> R2([PLANNING]) --> R4([IN_PROGRESS]) --> R6([AWAITING_APPROVAL]):::human --> R7([DONE]):::done
+    end
+
+    subgraph seo
+        direction LR
+        S1([BACKLOG]):::start --> S2([PLANNING]) --> S3([READY]) --> S4([IN_PROGRESS]) --> S5([DATA_REVIEW]):::review --> S6([AWAITING_APPROVAL]):::human --> S7([DONE]):::done
+    end
+
+    subgraph marketing
+        direction LR
+        M1([BACKLOG]):::start --> M2([PLANNING]) --> M3([BRIEFING]):::brief --> M4([IN_PROGRESS]) --> M5([REVIEW]):::review --> M6([AWAITING_APPROVAL]):::human --> M7([DONE]):::done
+    end
+
+    subgraph smm_task
+        direction LR
+        SM1([BACKLOG]):::start --> SM2([PLANNING]) --> SM3([READY]) --> SM4([IN_PROGRESS]) --> SM5([IN_REVIEW]):::review --> SM6([AWAITING_APPROVAL]):::human --> SM7([DONE]):::done
+    end
+
+    classDef start fill:#1a1a2e,stroke:#7c6cf0,color:#7c6cf0
+    classDef done fill:#0d2818,stroke:#4ecdc4,color:#4ecdc4
+    classDef human fill:#2d1a1a,stroke:#ff6b6b,color:#ff6b6b
+    classDef review fill:#1a2d2d,stroke:#4ecdc4,color:#4ecdc4
+    classDef brief fill:#2d2d1a,stroke:#f0c96c,color:#f0c96c
+</pre>
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#7c6cf0"></div>Start</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4"></div>Review stage</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Human gate (operator approval)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f0c96c"></div>Briefing</div>
+</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<section id="gates">
+<h2>Transition Gates <span>transition_gates.py — what blocks each transition</span></h2>
+
+<pre class="mermaid">
+%%{init: {'theme': 'dark'}}%%
+graph TB
+    PLANNING["→ PLANNING<br/>title ≥ 5 chars<br/>owner assigned<br/>mode set<br/>why non-empty"]
+    BRIEFING["→ BRIEFING<br/>+ research.md exists"]
+    READY["→ READY<br/>research.md ≥ 30 lines<br/>task_plan + quality check<br/>done_when non-empty<br/>spec-reviewer PASS<br/>prepare pipeline complete"]
+    IP_CODE["→ IN_PROGRESS (code)<br/>all KQ answered<br/>no placeholder text"]
+    IP_MKT["→ IN_PROGRESS (marketing)<br/>brief.md exists"]
+    IN_REVIEW["→ IN_REVIEW<br/>git commits #N<br/>test files + real assertions<br/>code-reviewer PASS fresh<br/>all required_reviews PASS"]
+    DATA_REVIEW["→ DATA_REVIEW (seo)<br/>git commits #N<br/>data/ non-empty<br/>seo-strategist PASS"]
+    REVIEW["→ REVIEW (marketing)<br/>git commits #N<br/>brief.md exists<br/>required reviewers PASS"]
+    AA["→ AWAITING_APPROVAL<br/>all required_reviews PASS"]
+    DONE["→ DONE<br/>all children terminal<br/>closure-reviewer PASS<br/>HANDOFF entry"]
+
+    PLANNING --> BRIEFING
+    PLANNING --> READY
+    BRIEFING --> IP_MKT
+    READY --> IP_CODE
+    IP_CODE --> IN_REVIEW
+    IP_MKT --> REVIEW
+    IN_REVIEW --> AA
+    DATA_REVIEW --> AA
+    REVIEW --> AA
+    AA --> DONE
+
+    style DONE fill:#0d2818,stroke:#4ecdc4,color:#4ecdc4
+    style AA fill:#2d1a1a,stroke:#ff6b6b,color:#ff6b6b
+</pre>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<section id="prepare">
+<h2>Prepare Pipeline <span>prepare.py — 7-step state machine for task preparation</span></h2>
+
+<pre class="mermaid">
+%%{init: {'theme': 'dark'}}%%
+graph LR
+    S0["0. context_scan<br/>SCRIPT<br/>→ context_bundle.md"]
+    S1["1. interrogation<br/>AI + HUMAN<br/>1a: questions<br/>1b: answers ★<br/>1c: research<br/>→ research.md"]
+    S2["2. requirements<br/>AI spec-writer<br/>→ requirements.md"]
+    S3["3. pipeline_detect<br/>SCRIPT<br/>multi-layer check"]
+    S4["4. design<br/>AI spec-writer<br/>→ design.md"]
+    S5["5. task_plan<br/>AI opus<br/>5a: skeleton<br/>5b: KQ<br/>5c: TS<br/>5d: KQ validation<br/>5e: TS validation<br/>→ task_plan.md"]
+    S6["6. spec_review<br/>AI spec-reviewer<br/>→ review-result.md"]
+
+    S0 --> S1 --> S2 --> S3 --> S4 --> S5 --> S6
+
+    style S1 fill:#2d1a1a,stroke:#ff6b6b,color:#ff6b6b
+    style S5 fill:#1a1a2e,stroke:#7c6cf0,color:#7c6cf0
+</pre>
+<div class="note">★ Step 1b (answers) is NEED_HUMAN — operator must answer questions before pipeline proceeds. All other AI steps are autonomous.</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<section id="scoring">
+<h2>Scoring <span>scoring.py — priority calculation</span></h2>
+
+<pre class="mermaid">
+%%{init: {'theme': 'dark'}}%%
+graph TB
+    subgraph Base["Base Score"]
+        SPEC["has_spec: +5"]
+        SUBJ["subjective: 20/(1+penalty)<br/>penalty by agent×type"]
+        REL["release_bonus: max(0, 20-days)"]
+        BROKEN["broken_bonus: +15<br/>crash, broken, etc"]
+        CONS["consumers: min(N×3, 15)"]
+        PRIO["priority_override: manual"]
+    end
+
+    BASE_SUM["base = sum of above"]
+
+    subgraph Cascade["Blocker Cascade (10 rounds)"]
+        BV["blocker_value = <br/>sum(potentials of tasks<br/>this unblocks) × 0.3"]
+        POT["potential = base + blocker_value"]
+    end
+
+    EFF{"effective_score"}
+    BLOCKED_CHECK{"is blocked?"}
+
+    SPEC --> BASE_SUM
+    SUBJ --> BASE_SUM
+    REL --> BASE_SUM
+    BROKEN --> BASE_SUM
+    CONS --> BASE_SUM
+    PRIO --> BASE_SUM
+    BASE_SUM --> POT
+    BV --> POT
+    POT --> BLOCKED_CHECK
+    BLOCKED_CHECK -->|no| EFF
+    BLOCKED_CHECK -->|yes| ZERO["effective = 0.0"]
+
+    style EFF fill:#0d2818,stroke:#4ecdc4,color:#4ecdc4
+    style ZERO fill:#2d1a1a,stroke:#ff6b6b,color:#ff6b6b
+</pre>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<section id="hooks">
+<h2>Hooks <span>hooks/ — Claude Code event handlers</span></h2>
+
+<pre class="mermaid">
+%%{init: {'theme': 'dark'}}%%
+graph TB
+    subgraph Tier1["Tier 1 — hot.py &lt;30ms"]
+        HT["hook-tool<br/>PreToolUse *<br/>→ inject task_plan<br/>→ storytelling reminder<br/>→ check pager"]
+        HCE["hook-code-edit<br/>PostToolUse Edit|Write<br/>→ invalidate review-result<br/>→ warn prepare bypass"]
+    end
+
+    subgraph Tier2["Tier 2 — router.py"]
+        HC["hook-close<br/>Edit backlog.yaml+DONE<br/>EXIT 2 — BLOCKED<br/>Use backlogist close"]
+        HEB["hook-edit-backlog<br/>Edit backlog.yaml<br/>EXIT 2 — BLOCKED<br/>YAML is read-only"]
+        HCM["hook-commit<br/>Bash git commit<br/>EXIT 0 — warnings<br/>→ auto-progress<br/>→ test check<br/>→ build-lint<br/>→ go vet / pytest<br/>→ YAML export"]
+        HS["hook-session<br/>SessionStart<br/>→ HANDOFF display<br/>→ strategic reminder /5<br/>→ stale tasks<br/>→ auto-rescore all"]
+    end
+
+    subgraph External["External Hooks (settings.json)"]
+        PAGER["pager.py<br/>Pre+PostToolUse<br/>inbox check"]
+        CTX["context-monitor.py<br/>PostToolUse<br/>context % + rate limits"]
+    end
+
+    style HC fill:#2d1a1a,stroke:#ff6b6b,color:#ff6b6b
+    style HEB fill:#2d1a1a,stroke:#ff6b6b,color:#ff6b6b
+</pre>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<section id="reviews">
+<h2>Review System <span>reviewer/ — AI pipeline + subagent verdicts</span></h2>
+
+<pre class="mermaid">
+%%{init: {'theme': 'dark'}}%%
+graph TB
+    subgraph Pipeline["AI Review Pipeline (close command)"]
+        CTX_C["1. Collect context<br/>HANDOFF, git diff,<br/>specs, knowledge"]
+        PROMPT["2. Assemble prompt<br/>base + conditional modules"]
+        LLM["3. Call LLM (sonnet)<br/>max 5 turns, $2 budget"]
+        PARSE["4. Parse verdict"]
+
+        CTX_C --> PROMPT --> LLM --> PARSE
+    end
+
+    subgraph Modules["Prompt Modules"]
+        PM1["base.txt<br/>always active"]
+        PM2["module-code.txt<br/>mode = Code"]
+        PM3["module-think.txt<br/>mode = Think"]
+        PM4["module-integration.txt<br/>has consumers"]
+        PM5["module-regression.txt<br/>has previous review"]
+    end
+
+    subgraph SubReviews["Subagent Reviews (review-submit)"]
+        SR1["code-reviewer"]
+        SR2["spec-reviewer"]
+        SR3["seo-strategist"]
+        SR4["closure-reviewer"]
+        SR5["integration-reviewer"]
+        SR6["ui-reviewer"]
+        SR7["test-engineer"]
+        SR8["marketing-strategist"]
+    end
+
+    PARSE --> PASS["PASS → AWAITING_APPROVAL"]
+    PARSE --> FAIL["FAIL → stays IN_REVIEW"]
+
+    Modules --> PROMPT
+
+    style PASS fill:#0d2818,stroke:#4ecdc4,color:#4ecdc4
+    style FAIL fill:#2d1a1a,stroke:#ff6b6b,color:#ff6b6b
+</pre>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<section id="routing">
+<h2>TASKOWNERS Routing <span>taskowners.yaml — owner → workflow + agents</span></h2>
+
+<pre class="mermaid">
+%%{init: {'theme': 'dark'}}%%
+graph LR
+    CREATE["backlogist create<br/>title, owner, mode"]
+
+    subgraph Rules["Matching Rules (most specific wins)"]
+        R1["owner:A mode:Code"]
+        R2["owner:B mode:Code"]
+        R3["owner:samvel mode:Code"]
+        R4["owner:meta mode:Code"]
+        R5["owner:seo"]
+        R6["owner:angel"]
+        R7["owner:smm"]
+        R8["mode:Think"]
+        R9["catch-all"]
+    end
+
+    subgraph Assigns["Assigned"]
+        A1["code_task<br/>code-reviewer<br/>test-engineer<br/>integration-reviewer"]
+        A2["code_task<br/>+ ui-reviewer"]
+        A3["code_task<br/>+ integration-reviewer"]
+        A4["code_task<br/>+ cli-developer"]
+        A5["seo workflow<br/>seo-strategist<br/>domain-researcher"]
+        A6["marketing workflow<br/>content-planner<br/>competitive-analyst"]
+        A7["marketing workflow<br/>smm-analyst<br/>content-planner"]
+        A8["think_task<br/>spec-reviewer<br/>domain-researcher"]
+        A9["code_task<br/>owner: meta"]
+    end
+
+    CREATE --> Rules
+    R1 --> A1
+    R2 --> A2
+    R3 --> A3
+    R4 --> A4
+    R5 --> A5
+    R6 --> A6
+    R7 --> A7
+    R8 --> A8
+    R9 --> A9
+</pre>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<section id="commands">
+<h2>CLI Commands <span>backlogist.py — all entry points</span></h2>
+
+<pre class="mermaid">
+%%{init: {'theme': 'dark'}}%%
+graph TB
+    subgraph Write["Write Commands"]
+        create["create"]
+        advance["advance"]
+        take["take"]
+        release["release"]
+        close["close"]
+        update["update"]
+        cancel["cancel"]
+        supersede["supersede"]
+        review_sub["review-submit"]
+    end
+
+    subgraph Read_["Read Commands"]
+        info["info"]
+        search["search"]
+        status["status"]
+        analytics["analytics"]
+        stale["stale"]
+        anomalies["anomalies"]
+        history["history"]
+        next["next {agent}"]
+    end
+
+    subgraph BacklogTools["Backlog Tools"]
+        generate["generate → BACKLOG.md"]
+        rescore["rescore"]
+        fix["fix"]
+        series["series"]
+        validate["validate"]
+    end
+
+    subgraph Plan["Planning"]
+        plan["plan 'goal'"]
+        prepare["prepare #N"]
+    end
+
+    subgraph Sess["Session"]
+        session_close["session-close"]
+        init["init"]
+        migrate["migrate-yaml"]
+    end
+
+    subgraph Multi["Multi-Agent"]
+        agent_list["agent list"]
+        taskowners_check["taskowners check"]
+        sprint["sprint create|status"]
+        knowledge["knowledge search"]
+    end
+
+    subgraph TON_["TON / Licensing"]
+        license["license check|activate"]
+        ton_status["ton-status"]
+        verify["verify #N"]
+    end
+</pre>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<section id="storage">
+<h2>Storage <span>storage/ — PostgreSQL + SQLite</span></h2>
+
+<pre class="mermaid">
+%%{init: {'theme': 'dark'}}%%
+graph TB
+    subgraph DB["Database Layer"]
+        PG["PostgreSQL<br/>default<br/>BACKLOGIST_PG_DSN"]
+        SQLITE["SQLite<br/>fallback / tests<br/>backlog.db"]
+        WRAPPER["DBConnection<br/>SQL adaptation<br/>REPLACE→ON CONFLICT<br/>?→%s<br/>PRAGMA→skip"]
+    end
+
+    subgraph Tables_["Tables"]
+        tasks["tasks<br/>id, title, why, owner, status,<br/>mode, workflow, effective_score,<br/>blocked_by, done_when, task_plan,<br/>parent_task_id, custom_fields..."]
+        audit["audit_trail<br/>field changes log"]
+        reviews["review_results<br/>verdict, issues, coverage"]
+        time_e["time_entries<br/>agent work tracking"]
+        pager["pager_messages<br/>inter-agent messaging"]
+        sprints["sprints + sprint_tasks"]
+        ton["agent_wallets<br/>anchor_queue<br/>licenses"]
+    end
+
+    subgraph Exports["Generated Files"]
+        YAML["backlog.yaml<br/>read-only sync"]
+        BL_MD["BACKLOG.md<br/>scoreboard"]
+    end
+
+    PG --> WRAPPER
+    SQLITE --> WRAPPER
+    WRAPPER --> Tables_
+    Tables_ --> Exports
+
+    style PG fill:#1a1a2e,stroke:#7c6cf0,color:#7c6cf0
+</pre>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<section id="subtasks">
+<h2>Subtask System <span>parent/child hierarchy</span></h2>
+
+<pre class="mermaid">
+%%{init: {'theme': 'dark'}}%%
+graph TB
+    PARENT["Parent Task #N"]
+    CHILD1["Child #A<br/>create --parent #N"]
+    CHILD2["Child #B<br/>create --parent #N"]
+    CHILD3["Child #C<br/>create --parent #N"]
+
+    PARENT --> CHILD1
+    PARENT --> CHILD2
+    PARENT --> CHILD3
+
+    CHILD1 --> |DONE| CHECK
+    CHILD2 --> |DONE| CHECK
+    CHILD3 --> |IN_PROGRESS| BLOCK
+
+    CHECK{"All children<br/>terminal?"}
+    BLOCK["BLOCKED:<br/>parent cannot close<br/>while children active"]
+    CLOSE["Parent → DONE"]
+
+    CHECK -->|yes| CLOSE
+    CHECK -->|no| BLOCK
+
+    NEW_CHILD["New child on DONE parent<br/>→ auto-REOPEN parent"]
+    NEW_CHILD -.-> PARENT
+
+    style CLOSE fill:#0d2818,stroke:#4ecdc4,color:#4ecdc4
+    style BLOCK fill:#2d1a1a,stroke:#ff6b6b,color:#ff6b6b
+</pre>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<section id="mcp">
+<h2>MCP Tools <span>mcp/ — 16 tools via JSON-RPC stdio</span></h2>
+
+<pre class="mermaid">
+%%{init: {'theme': 'dark'}}%%
+graph TB
+    MCP_SERVER["MCP Server<br/>backlogist mcp<br/>FastMCP or fallback"]
+
+    subgraph TaskOps["Task Operations"]
+        create_t["create_task"]
+        get_t["get_task"]
+        update_t["update_task"]
+        close_t["close_task"]
+        take_t["take_task"]
+        release_t["release_task"]
+    end
+
+    subgraph Query["Query"]
+        search_t["search_tasks"]
+        status_t["get_status"]
+        analytics_t["get_analytics"]
+        next_t["next_tasks"]
+        history_t["task_history"]
+    end
+
+    subgraph ReviewMCP["Review"]
+        review_t["run_review"]
+        submit_t["review_submit"]
+    end
+
+    subgraph Comms["Communication"]
+        send_t["send_message"]
+        inbox_t["check_inbox"]
+    end
+
+    subgraph PlanMCP["Planning"]
+        plan_t["plan_goal"]
+    end
+
+    MCP_SERVER --> TaskOps
+    MCP_SERVER --> Query
+    MCP_SERVER --> ReviewMCP
+    MCP_SERVER --> Comms
+    MCP_SERVER --> PlanMCP
+</pre>
+</section>
+
+</main>
+
+<footer>
+  BACKLOGIST SYSTEM MAP / AX Platform / Generated 2026-04-10
+</footer>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      darkMode: true,
+      background: '#12121a',
+      primaryColor: '#7c6cf0',
+      primaryTextColor: '#e0e0e8',
+      primaryBorderColor: '#7c6cf0',
+      lineColor: '#4ecdc4',
+      secondaryColor: '#1e1e2e',
+      tertiaryColor: '#1a1a2e',
+      fontFamily: 'JetBrains Mono, SF Mono, monospace',
+      fontSize: '13px',
+    },
+    flowchart: {
+      useMaxWidth: true,
+      htmlLabels: true,
+      curve: 'basis',
+    },
+  });
+</script>
+
+</body>
+</html>
