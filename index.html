@@ -344,11 +344,11 @@
   <div class="wrap">
     <div class="stats sr">
       <div class="stat"><div class="stat-val gradient-text">7&rarr;1</div><div class="stat-label">Scripts consolidated</div></div>
-      <div class="stat"><div class="stat-val gradient-text" data-count="14">0</div><div class="stat-label">Knowledge sources</div></div>
-      <div class="stat"><div class="stat-val gradient-text" data-count="5">0</div><div class="stat-label">Reviewer modules</div></div>
+      <div class="stat"><div class="stat-val gradient-text" data-count="14">14</div><div class="stat-label">Knowledge sources</div></div>
+      <div class="stat"><div class="stat-val gradient-text" data-count="5">5</div><div class="stat-label">Reviewer modules</div></div>
       <div class="stat"><div class="stat-val gradient-text">&lt;30<span style="font-size:0.45em">ms</span></div><div class="stat-label">Hot-path hooks</div></div>
-      <div class="stat"><div class="stat-val gradient-text" data-count="38">0</div><div class="stat-label">Tests passing</div></div>
-      <div class="stat"><div class="stat-val gradient-text" data-count="11">0</div><div class="stat-label">Database tables</div></div>
+      <div class="stat"><div class="stat-val gradient-text" data-count="1246">1246</div><div class="stat-label">Tests passing</div></div>
+      <div class="stat"><div class="stat-val gradient-text" data-count="11">11</div><div class="stat-label">Database tables</div></div>
     </div>
   </div>
 </section>
@@ -366,7 +366,7 @@
       <div class="uc-card featured card tilt-card sr">
         <div class="uc-number">01</div>
         <span class="badge badge-pink uc-badge">Killer Feature</span>
-        <h3>AI Meeting Host</h3>
+        <h3>AI Meeting Host <span style="font-size:0.6em;color:var(--text-3);font-weight:400">(roadmap)</span></h3>
         <p>backlogist doesn't record meetings — it <strong style="color:var(--text)">runs them</strong>. Opens the call, reads today's agenda from backlog, asks each participant about their tasks, logs answers in real-time, escalates blockers, closes with summary and auto-created action items. Daily standups: 3 questions per person, blockers escalated instantly.</p>
         <div class="uc-cli"><span>$</span> backlogist meeting --standup --channel general</div>
       </div>
@@ -415,8 +415,9 @@
         <div class="uc-number">07</div>
         <span class="badge badge-cyan uc-badge">Integrations</span>
         <h3>Meeting Transcripts &rarr; Tasks</h3>
-        <p>Fireflies.ai transcribes your client call. backlogist extracts action items and creates tasks automatically. Discussed "need a blog"? Task created, assigned, knowledge assembled. Telegram bot sends daily digests, human gates via inline buttons, real-time status updates. Notion two-way sync keeps the whole team on the same page.</p>
-        <div class="uc-cli"><span>$</span> backlogist sync --notion --telegram-digest</div>
+        <p>Fireflies.ai transcribes your client call. backlogist extracts action items and creates tasks automatically. Discussed "need a blog"? Task created, assigned, knowledge assembled. Telegram bot sends daily digests, human gates via inline buttons, real-time status updates.</p>
+        <details style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-2)"><summary style="cursor:pointer;color:var(--cyan)">Integration status</summary><p style="padding:0.5rem 0">Fireflies.ai: integration built, activation pending (#617). Telegram bot: active, daily digests + inline approvals. Notion sync: roadmap.</p></details>
+        <div class="uc-cli"><span>$</span> backlogist sync --telegram-digest</div>
       </div>
 
       <div class="uc-card card tilt-card sr" data-d="1">
@@ -433,10 +434,10 @@
 <!-- FEATURES -->
 <section id="features">
   <div class="wrap">
-    <div class="sec-head center sr"><span class="label"><a href="https://ayant-x.com" style="display:inline;vertical-align:middle"><img src="ax-logo.png" alt="AX" style="height:28px;filter:brightness(1.2);vertical-align:middle;margin-right:6px"></a> Core Engine</span><h2>Everything under the hood.<br><span class="gradient-text">Nothing unnecessary.</span></h2><p>Nine commands, six hooks, one AI reviewer. Each piece eliminates a specific failure mode.</p></div>
+    <div class="sec-head center sr"><span class="label"><a href="https://ayant-x.com" style="display:inline;vertical-align:middle"><img src="ax-logo.png" alt="AX" style="height:28px;filter:brightness(1.2);vertical-align:middle;margin-right:6px"></a> Core Engine</span><h2>Everything under the hood.<br><span class="gradient-text">Nothing unnecessary.</span></h2><p>40+ commands, 6 hooks, 8 reviewer modules, 6 workflow types. Each piece eliminates a specific failure mode.</p></div>
     <div class="bento">
-      <div class="bento-item span-2 card tilt-card sr"><div class="bento-icon">&#9881;</div><h3>Lifecycle Management</h3><p>Create, take, release, update, close — with enforced state transitions. <span style="font-family:var(--font-mono);font-size:0.82em;color:var(--purple-soft)">BACKLOG &rarr; READY &rarr; IN_PROGRESS &rarr; IN_REVIEW &rarr; DONE</span>. Invalid transitions rejected with clear guidance.</p></div>
-      <div class="bento-item card tilt-card sr" data-d="1"><div class="bento-icon" style="background:rgba(236,72,153,0.08);border-color:rgba(236,72,153,0.15)">&#128270;</div><h3>Knowledge Assembly</h3><p>14 sources searched in parallel. Specs, legacy code, case studies, HANDOFF archives. Claude filters for relevance. Over-inclusive by design.</p></div>
+      <div class="bento-item span-2 card tilt-card sr"><div class="bento-icon">&#9881;</div><h3>Lifecycle Management</h3><p>6 workflow types: code, think, research, SEO, marketing, SMM — each with its own stages and gates. Invalid transitions rejected with specific guidance on what's missing.</p><details style="margin-top:0.5rem;font-size:0.78rem;color:var(--text-2)"><summary style="cursor:pointer;color:var(--purple-soft)">See all workflows</summary><p style="padding:0.5rem 0;line-height:1.8;font-family:var(--font-mono);font-size:0.75rem"><strong style="color:var(--text)">code_task:</strong> BACKLOG &rarr; PLANNING &rarr; READY &rarr; IN_PROGRESS &rarr; IN_REVIEW &rarr; AWAITING_APPROVAL &rarr; DONE<br/><strong style="color:var(--text)">think_task:</strong> BACKLOG &rarr; PLANNING &rarr; READY &rarr; IN_PROGRESS &rarr; AWAITING_APPROVAL &rarr; DONE<br/><strong style="color:var(--text)">research:</strong> BACKLOG &rarr; PLANNING &rarr; IN_PROGRESS &rarr; AWAITING_APPROVAL &rarr; DONE<br/><strong style="color:var(--text)">seo:</strong> BACKLOG &rarr; PLANNING &rarr; READY &rarr; IN_PROGRESS &rarr; DATA_REVIEW &rarr; AWAITING_APPROVAL &rarr; DONE<br/><strong style="color:var(--text)">marketing:</strong> BACKLOG &rarr; PLANNING &rarr; BRIEFING &rarr; IN_PROGRESS &rarr; REVIEW &rarr; AWAITING_APPROVAL &rarr; DONE<br/><strong style="color:var(--text)">smm_task:</strong> BACKLOG &rarr; PLANNING &rarr; READY &rarr; IN_PROGRESS &rarr; IN_REVIEW &rarr; AWAITING_APPROVAL &rarr; DONE</p></details></div>
+      <div class="bento-item card tilt-card sr" data-d="1"><div class="bento-icon" style="background:rgba(236,72,153,0.08);border-color:rgba(236,72,153,0.15)">&#128270;</div><h3>Knowledge Assembly</h3><p>14 sources searched in parallel. Claude filters for relevance. Over-inclusive by design.</p><details style="margin-top:0.5rem;font-size:0.75rem;color:var(--text-2)"><summary style="cursor:pointer;color:var(--pink)">All 14 sources</summary><p style="padding:0.4rem 0;line-height:1.7">1. Task specs (docs/specs/) 2. HANDOFF archives 3. CLAUDE.md instructions 4. Git history &amp; blame 5. Capabilities config 6. tools-catalog.yaml 7. our-marketing/ data 8. Architecture docs 9. Agent docs 10. Patterns catalog 11. Strategic sessions 12. Backlog context (siblings, blockers) 13. Previous review results 14. Research artifacts</p></details></div>
       <div class="bento-item card tilt-card sr"><div class="bento-icon" style="background:rgba(52,211,153,0.08);border-color:rgba(52,211,153,0.15)">&#9989;</div><h3>Modular AI Review</h3><p>Prompt modules activate per task type. Code &rarr; spec validation. Integration &rarr; data flow checks. Structured JSON verdicts: PASS, FAIL, NEEDS_WORK.</p></div>
       <div class="bento-item card tilt-card sr" data-d="1"><div class="bento-icon" style="background:rgba(6,182,212,0.08);border-color:rgba(6,182,212,0.15)">&#9889;</div><h3>Three-Tier Performance</h3><p>Hot-path &lt;30ms (zero imports). Standard &lt;3s. Heavy up to 120s with progress indicators.</p></div>
       <div class="bento-item card tilt-card sr" data-d="2"><div class="bento-icon" style="background:rgba(251,191,36,0.08);border-color:rgba(251,191,36,0.15)">&#128209;</div><h3>Immutable Audit Trail</h3><p>Every field change: who, when, what, why. Append-only. Queryable via <code style="color:var(--purple-soft)">history</code>.</p></div>

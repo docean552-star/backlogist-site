@@ -600,6 +600,105 @@ graph LR
   <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Human gate (operator approval)</div>
   <div class="legend-item"><div class="legend-dot" style="background:#f0c96c"></div>Briefing</div>
 </div>
+
+<details style="margin-top:1.5rem;border:1px solid var(--border);border-radius:8px;padding:1rem;background:var(--card)">
+<summary style="cursor:pointer;color:var(--accent);font-size:0.85rem;font-weight:500">code_task — full engineering lifecycle (default)</summary>
+<div style="padding:0.75rem 0;font-size:0.75rem;color:var(--dim);line-height:1.8">
+<strong>Purpose:</strong> Platform features, bug fixes, integrations — anything that produces committed code.<br/>
+<strong>Planning agents:</strong> task-planner, domain-researcher, spec-writer, spec-reviewer, marketing-strategist<br/>
+<strong>Review agents:</strong> code-reviewer (+ per-task: test-engineer, integration-reviewer, ui-reviewer)<br/>
+<strong>Gates:</strong><br/>
+&nbsp;&nbsp;→ PLANNING: title ≥5, owner, mode, why, business_value<br/>
+&nbsp;&nbsp;→ READY: research.md ≥30 lines + agent marker, task_plan (KQ≥3, TS≥10, no self-answered, no banned phrases), done_when, spec-reviewer PASS, prepare complete<br/>
+&nbsp;&nbsp;→ IN_PROGRESS: all KQ answered (no placeholders)<br/>
+&nbsp;&nbsp;→ IN_REVIEW: git commits #N, test files with real assertions, code-reviewer PASS (fresh), all required_reviews PASS, refactor reminder<br/>
+&nbsp;&nbsp;→ AWAITING_APPROVAL: all required_reviews PASS<br/>
+&nbsp;&nbsp;→ DONE: all children terminal, closure-reviewer PASS, HANDOFF entry with Status/Deliverables/Decisions/Findings<br/>
+<strong>Example:</strong> <code>backlogist create title:"Add JWT refresh" owner:samvel mode:Code why:"tokens expire mid-session"</code>
+</div>
+</details>
+
+<details style="margin-top:0.5rem;border:1px solid var(--border);border-radius:8px;padding:1rem;background:var(--card)">
+<summary style="cursor:pointer;color:var(--accent);font-size:0.85rem;font-weight:500">think_task — specs, design, architecture (no code)</summary>
+<div style="padding:0.75rem 0;font-size:0.75rem;color:var(--dim);line-height:1.8">
+<strong>Purpose:</strong> Architectural decisions, spec documents, design docs, audit reports — deliverable is a document, not code.<br/>
+<strong>Planning agents:</strong> task-planner, spec-writer, spec-reviewer, marketing-strategist<br/>
+<strong>Review agents:</strong> none (no code = no code review)<br/>
+<strong>Gates:</strong><br/>
+&nbsp;&nbsp;→ PLANNING: same as code_task<br/>
+&nbsp;&nbsp;→ READY: research.md, task_plan (KQ≥3, TS≥5), done_when, spec-reviewer PASS<br/>
+&nbsp;&nbsp;→ IN_PROGRESS: KQ answered<br/>
+&nbsp;&nbsp;→ AWAITING_APPROVAL: (direct from IN_PROGRESS, no review stage)<br/>
+&nbsp;&nbsp;→ DONE: closure-reviewer PASS, HANDOFF entry<br/>
+<strong>Key difference:</strong> No IN_REVIEW. Self-review the document, then closure-reviewer verifies business delivery at DONE.<br/>
+<strong>Example:</strong> <code>backlogist create title:"Architecture: signal routing" owner:meta mode:Think why:"unclear data flow"</code>
+</div>
+</details>
+
+<details style="margin-top:0.5rem;border:1px solid var(--border);border-radius:8px;padding:1rem;background:var(--card)">
+<summary style="cursor:pointer;color:var(--accent);font-size:0.85rem;font-weight:500">research_task — exploration, domain research</summary>
+<div style="padding:0.75rem 0;font-size:0.75rem;color:var(--dim);line-height:1.8">
+<strong>Purpose:</strong> Open-ended exploration — competitor analysis, tool evaluation, feasibility studies. Plan is a compass, not a route.<br/>
+<strong>Planning agents:</strong> domain-researcher<br/>
+<strong>Review agents:</strong> none<br/>
+<strong>Gates:</strong><br/>
+&nbsp;&nbsp;→ PLANNING: title, owner, mode, why<br/>
+&nbsp;&nbsp;→ IN_PROGRESS: done_when required (what counts as "enough" research)<br/>
+&nbsp;&nbsp;→ AWAITING_APPROVAL: (direct from IN_PROGRESS)<br/>
+&nbsp;&nbsp;→ DONE: closure-reviewer PASS, HANDOFF entry<br/>
+<strong>Key difference:</strong> No READY stage (research diverges by design). Plan is minimal — starting hypotheses + exit criteria. Log all branches, dead ends, surprises.<br/>
+<strong>Example:</strong> <code>backlogist create title:"Research: Apify actors for LinkedIn" owner:T1 mode:Research why:"need scraping baseline"</code>
+</div>
+</details>
+
+<details style="margin-top:0.5rem;border:1px solid var(--border);border-radius:8px;padding:1rem;background:var(--card)">
+<summary style="cursor:pointer;color:var(--accent);font-size:0.85rem;font-weight:500">seo — data collection, audits, keyword research</summary>
+<div style="padding:0.75rem 0;font-size:0.75rem;color:var(--dim);line-height:1.8">
+<strong>Purpose:</strong> SEO data tasks — running scripts/APIs, collecting keyword data, backlink audits. NOT code features.<br/>
+<strong>Planning agents:</strong> seo-strategist, domain-researcher<br/>
+<strong>Review agents:</strong> seo-strategist (data quality, not code quality)<br/>
+<strong>Gates:</strong><br/>
+&nbsp;&nbsp;→ PLANNING: title, owner, mode, why<br/>
+&nbsp;&nbsp;→ READY: collection brief (target domains, APIs, estimated cost, output format, consumer)<br/>
+&nbsp;&nbsp;→ IN_PROGRESS: KQ answered<br/>
+&nbsp;&nbsp;→ DATA_REVIEW: git commits, our-marketing/data/ files non-empty, seo-strategist PASS<br/>
+&nbsp;&nbsp;→ AWAITING_APPROVAL: all reviews PASS<br/>
+&nbsp;&nbsp;→ DONE: closure-reviewer PASS, HANDOFF<br/>
+<strong>Key difference:</strong> DATA_REVIEW replaces IN_REVIEW. seo-strategist checks completeness + plausibility (volumes > 0, positions 1-100), not code.<br/>
+<strong>Example:</strong> <code>backlogist create title:"Keyword gap: ayant-x vs plurio" owner:seo mode:Code why:"content planning needs data"</code>
+</div>
+</details>
+
+<details style="margin-top:0.5rem;border:1px solid var(--border);border-radius:8px;padding:1rem;background:var(--card)">
+<summary style="cursor:pointer;color:var(--accent);font-size:0.85rem;font-weight:500">marketing — strategy, content, copywriting</summary>
+<div style="padding:0.75rem 0;font-size:0.75rem;color:var(--dim);line-height:1.8">
+<strong>Purpose:</strong> Marketing deliverables — articles, playbooks, strategy docs, brand assets. Output goes to our-marketing/.<br/>
+<strong>Planning agents:</strong> domain-researcher, content-planner, competitive-analyst<br/>
+<strong>Review agents:</strong> marketing-strategist (content quality + strategic fit)<br/>
+<strong>Gates:</strong><br/>
+&nbsp;&nbsp;→ PLANNING: title, owner, mode, why<br/>
+&nbsp;&nbsp;→ BRIEFING: research.md exists + done_when<br/>
+&nbsp;&nbsp;→ IN_PROGRESS: brief.md exists (audience, sources, output format, downstream, constraints)<br/>
+&nbsp;&nbsp;→ REVIEW: git commits, brief.md, marketing-strategist PASS<br/>
+&nbsp;&nbsp;→ AWAITING_APPROVAL: all reviews PASS<br/>
+&nbsp;&nbsp;→ DONE: closure-reviewer PASS, HANDOFF<br/>
+<strong>Key difference:</strong> BRIEFING replaces READY. Brief defines audience+sources before work starts. REVIEW (not IN_REVIEW) checks content quality, not code.<br/>
+<strong>Example:</strong> <code>backlogist create title:"Pillar article: Crypto AEO" owner:seo mode:Code why:"SEO content gap"</code>
+</div>
+</details>
+
+<details style="margin-top:0.5rem;border:1px solid var(--border);border-radius:8px;padding:1rem;background:var(--card)">
+<summary style="cursor:pointer;color:var(--accent);font-size:0.85rem;font-weight:500">smm_task — posts, visuals, social competitor research</summary>
+<div style="padding:0.75rem 0;font-size:0.75rem;color:var(--dim);line-height:1.8">
+<strong>Purpose:</strong> Social media content — post creation, visual assets, competitor social analysis, engagement research.<br/>
+<strong>Planning agents:</strong> task-planner, domain-researcher, spec-writer, spec-reviewer, smm-analyst, seo-strategist, marketing-strategist<br/>
+<strong>Review agents:</strong> code-reviewer<br/>
+<strong>Gates:</strong> Same as code_task (research + task_plan + code-review).<br/>
+<strong>Key difference:</strong> Planning includes smm-analyst (platform specifics) + seo-strategist (cross-channel). Broader agent pool for context.<br/>
+<strong>Example:</strong> <code>backlogist create title:"LinkedIn post series: signal-driven marketing" owner:smm mode:Code why:"content calendar Q2"</code>
+</div>
+</details>
+
 </section>
 
 <!-- ═══════════════════════════════════════════════ -->
@@ -1089,7 +1188,7 @@ graph TB
 </main>
 
 <footer>
-  BACKLOGIST SYSTEM MAP / AX Platform / Generated 2026-04-10
+  BACKLOGIST SYSTEM MAP / AX Platform / Updated 2026-05-16
 </footer>
 
 <script>
